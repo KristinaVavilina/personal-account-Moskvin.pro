@@ -17,7 +17,7 @@ public class Task
     public int TypeId { get; set; }
 
     [ForeignKey(nameof(TypeId))]
-    public Type? Type { get; set; }
+    public TaskType? Type { get; set; }
 
     public required string Title { get; set; }
 
