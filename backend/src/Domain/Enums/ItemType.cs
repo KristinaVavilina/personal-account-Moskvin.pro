@@ -1,4 +1,4 @@
-﻿namespace Domain.Enums.KnowledgeBase;
+﻿namespace Domain.Enums;
 
 public enum ItemType
 {

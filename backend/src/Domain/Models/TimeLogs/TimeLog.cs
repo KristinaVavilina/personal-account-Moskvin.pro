@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Domain.Models.Users;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Domain.Models.TimeLogs;
@@ -12,6 +13,11 @@ public class TimeLog
 
     [ForeignKey(nameof(TaskId))]
     public Task? Task { get; set; }
+
+    public Guid UserId { get; set; }
+
+    [ForeignKey(nameof(UserId))]
+    public User? User { get; set; }
 
     public required DateOnly Date { get; set; }
 

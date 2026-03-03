@@ -1,4 +1,4 @@
-﻿namespace Domain.Interfaces;
+﻿namespace Domain.Interfaces.Repositories;
 
 public interface IRepository<TEntity, TId> where TEntity : class
 {

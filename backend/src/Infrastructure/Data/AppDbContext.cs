@@ -1,5 +1,4 @@
-﻿using Domain.Enums.Users;
-using Domain.Models.KnowledgeBase;
+﻿using Domain.Models.KnowledgeBase;
 using Domain.Models.Users;
 using Domain.Models.System;
 using Domain.Models.TimeLogs;
@@ -38,7 +37,7 @@ public class AppDbContext : DbContext
             entity.HasIndex(u => u.Email).IsUnique();
             entity.Property(u => u.Id).HasDefaultValueSql("gen_random_uuid()");
             entity.Property(u => u.CreatedAt).HasDefaultValueSql("now()");
-            entity.Property(u => u.Status).HasDefaultValue(UserStatus.Active);
+            entity.Property(u => u.IsArchived).HasDefaultValue(true);
         });
 
         modelBuilder.Entity<Domain.Models.TimeLogs.Task>(entity =>

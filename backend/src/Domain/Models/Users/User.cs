@@ -1,4 +1,4 @@
-﻿using Domain.Enums.Users;
+﻿using Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -24,7 +24,7 @@ public class User
     [ForeignKey(nameof(PositionId))]
     public Position? Position { get; set; }
 
-    public required UserStatus Status { get; set; }
+    public required bool IsArchived { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

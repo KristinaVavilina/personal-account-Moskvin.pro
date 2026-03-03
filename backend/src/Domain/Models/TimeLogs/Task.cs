@@ -1,4 +1,5 @@
-﻿using Domain.Models.Users;
+﻿using Domain.Enums;
+using Domain.Models.Users;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -23,7 +24,7 @@ public class Task
 
     public string? Description { get; set; }
 
-    public int CurrentProgress { get; set; }
+    public TaskProgress CurrentProgress { get; set; }
 
     public bool IsArchived { get; set; }
 
