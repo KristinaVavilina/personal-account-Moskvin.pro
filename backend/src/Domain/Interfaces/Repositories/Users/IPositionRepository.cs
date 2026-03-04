@@ -1,0 +1,7 @@
+﻿using Domain.Models.Users;
+
+namespace Domain.Interfaces.Repositories.Users;
+
+public interface IPositionRepository : IRepository<Position, int>
+{
+}
