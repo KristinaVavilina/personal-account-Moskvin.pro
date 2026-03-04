@@ -10,13 +10,17 @@ public class KbRepository(AppDbContext context)
 {
     public async Task<IEnumerable<KnowledgeBaseItem>> GetTreeItemsAsync(bool isArchived)
     {
-        // Доделать
+        return await _dbSet
+            .Where(x => x.IsArchived == isArchived)
+            .OrderBy(x => x.Type)
+            .ToListAsync();
     }
 
     public async Task<IEnumerable<KnowledgeBaseItem>> GetActiveChildrenByParentIdAsync(Guid? parentId)
     {
         return await _dbSet
             .Where(x => x.ParentId == parentId && !x.IsArchived)
+            .OrderBy(x => x.Type)
             .ToListAsync();
     }
 }
