@@ -1,10 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿namespace Application.DTO.System;
 
-namespace Domain.Models.System;
-
-public class SystemSetting
+public class SystemSettingResponse
 {
-    [Key]
     public required string Id { get; set; }
 
     public string? Value { get; set; }
