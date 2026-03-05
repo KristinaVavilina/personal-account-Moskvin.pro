@@ -1,6 +1,6 @@
 ﻿namespace Application.DTO.TimeLogs.TimeLog;
 
-internal class TimeLogRequest
+public class TimeLogRequest
 {
     public Guid TaskId { get; set; }
 

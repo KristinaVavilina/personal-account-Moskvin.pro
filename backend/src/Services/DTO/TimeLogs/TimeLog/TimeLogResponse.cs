@@ -1,6 +1,6 @@
 ﻿namespace Application.DTO.TimeLogs.TimeLog;
 
-internal class TimeLogResponse
+public class TimeLogResponse
 {
     public Guid Id { get; set; }
 

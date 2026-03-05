@@ -7,12 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Interfaces\Services\Users\" />
-    <Folder Include="Interfaces\Services\TimeLogs\" />
-    <Folder Include="Interfaces\Services\KnowledgeBase\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Domain\Domain.csproj" />
   </ItemGroup>
 
