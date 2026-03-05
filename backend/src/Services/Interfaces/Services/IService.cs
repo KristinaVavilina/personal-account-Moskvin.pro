@@ -1,14 +1,16 @@
-﻿namespace Applicatiion.Interfaces.Services;
+﻿using Domain.Errors;
+
+namespace Applicatiion.Interfaces.Services;
 
 public interface IService<TRequest, TResponse, TId>
 {
-    Task AddAsync(TRequest request);
+    Task<Result<string>> AddAsync(TRequest request);
 
-    Task<TResponse?> GetByIdAsync(TId id);
+    Task<Result<TResponse?>> GetByIdAsync(TId id);
 
-    Task<IEnumerable<TResponse>> GetAllAsync();
+    Task<Result<IEnumerable<TResponse>>> GetAllAsync();
 
-    Task UpdateAsync(TId id, TRequest request);
+    Task<Result<string>> UpdateAsync(TId id, TRequest request);
 
-    Task RemoveAsync(TId id);
+    Task<Result<string>> RemoveAsync(TId id);
 }

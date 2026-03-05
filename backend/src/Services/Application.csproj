@@ -10,4 +10,15 @@
     <ProjectReference Include="..\Domain\Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\KnowledgeBase\" />
+    <Folder Include="Services\System\" />
+    <Folder Include="Services\TimeLogs\" />
+    <Folder Include="Services\Users\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="16.1.0" />
+  </ItemGroup>
+
 </Project>
