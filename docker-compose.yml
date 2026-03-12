@@ -1,18 +1,42 @@
+version: '3.8'
+
 services:
+  db:
+    image: postgres:latest
+    container_name: postgres_db
+    restart: always
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=your_password
+      - POSTGRES_DB=knowledge_base
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  seq:
+    image: datalust/seq:latest
+    container_name: seq_logs
+    restart: always
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - "5341:80"   # Интерфейс Seq будет на http://localhost:5341
 
   backend:
-    context: ./backend
-    dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: backend_api
+    depends_on:
+      - db
+      - seq
     ports:
       - "8080:8080"
-    enviroment:
+    environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=knowledge_base;Username=admin;Password=your_password
+      - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
+volumes:
+  postgres_data:

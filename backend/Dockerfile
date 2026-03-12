@@ -8,16 +8,16 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-COPY ["src/Api/Api.csproj", "src/Api/"]
-COPY ["src/Domain/Domain.csproj", "src/Domain/"]
-COPY ["src/Infrastructure/Infrastructure.csproj", "src/Infrastructure/"]
-COPY ["src/Services/Services.csproj", "src/Services/"]
+COPY ["backend/src/Api/Api.csproj", "src/Api/"]
+COPY ["backend/src/Domain/Domain.csproj", "src/Domain/"]
+COPY ["backend/src/Infrastructure/Infrastructure.csproj", "src/Infrastructure/"]
+COPY ["backend/src/Application/Application.csproj", "src/Application/"]
 
 RUN dotnet restore "src/Api/Api.csproj"
 
 COPY . .
 
-WORKDIR "/src/src/Api"
+WORKDIR "/src/backend/src/Api"
 RUN dotnet build "Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish

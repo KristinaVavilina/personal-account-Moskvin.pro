@@ -4,7 +4,7 @@ namespace Applicatiion.Interfaces.Services;
 
 public interface IService<TRequest, TResponse, TId>
 {
-    Task<Result<string>> AddAsync(TRequest request);
+    Task<Result<TId>> AddAsync(TRequest request);
 
     Task<Result<TResponse?>> GetByIdAsync(TId id);
 
