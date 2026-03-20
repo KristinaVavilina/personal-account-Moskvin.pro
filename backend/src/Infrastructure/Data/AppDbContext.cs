@@ -13,6 +13,8 @@ public class AppDbContext : DbContext
 
     public DbSet<Position> Positions { get; set; }
 
+    public DbSet<DailyReflection> DailyReflections { get; set; }
+
     public DbSet<TaskType> TaskTypes { get; set; }
 
     public DbSet<Domain.Models.TimeLogs.Task> Tasks { get; set; }
