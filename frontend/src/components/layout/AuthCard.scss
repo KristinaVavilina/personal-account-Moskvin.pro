@@ -1,0 +1,207 @@
+// =====================================================
+//  Страница авторизации (обёртка)
+// =====================================================
+.auth-page {
+  min-height: 100vh;
+  background: var(--surface-inset);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+
+  // Декоративные фоновые блобы
+  &::before {
+    content: '';
+    position: absolute;
+    width: 90rem;
+    height: 70rem;
+    border-radius: 50% 40% 65% 45% / 50% 60% 40% 60%;
+    background: rgba(255, 255, 255, 0.45);
+    top: -28rem;
+    right: -18rem;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    width: 75rem;
+    height: 60rem;
+    border-radius: 45% 55% 40% 60% / 55% 45% 60% 40%;
+    background: rgba(255, 255, 255, 0.35);
+    bottom: -20rem;
+    left: -20rem;
+    pointer-events: none;
+  }
+}
+
+// =====================================================
+//  Карточка авторизации
+// =====================================================
+.auth-card {
+  display: flex;
+  flex-direction: row;
+  width: 120rem;
+  border-radius: 2rem;
+  box-shadow: var(--shadow-lg);
+  background: var(--surface-inset);
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+
+  // =====================================================
+  //  Сторона с формой
+  // =====================================================
+  &__form-side {
+    flex: 0 0 65rem;
+    height: 70rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5rem;
+    padding: 2.5rem 3rem;
+  }
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    height: 14rem;
+    justify-content: center;
+  }
+
+  &__title {
+    font-size: 3.6rem;
+    font-weight: 700;
+    color: var(--accent-dark);
+    line-height: normal;
+  }
+
+  &__subtitle {
+    font-size: 3.2rem;
+    font-weight: 600;
+    color: var(--accent-light);
+    line-height: normal;
+  }
+
+  // =====================================================
+  //  Сторона с брендом
+  // =====================================================
+  &__brand-side {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-dark);
+    border-radius: 2rem;
+    box-shadow: var(--shadow-lg);
+    padding: 0 10rem;
+  }
+
+  &__logo {
+    width: 100%;
+    aspect-ratio: 30 / 32;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      filter: brightness(0) invert(1) opacity(0.9);
+    }
+  }
+}
+
+// =====================================================
+//  Форма авторизации (общая)
+// =====================================================
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  width: 100%;
+
+  &__fields {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__label {
+    font-size: 2.4rem;
+    font-weight: 600;
+    color: var(--accent-dark);
+    padding: 0.5rem 0;
+  }
+
+  &__input {
+    width: 100%;
+    height: 6rem;
+    background: #ffffff;
+    border-radius: 2rem;
+    border: none;
+    outline: none;
+    padding: 1rem 2rem;
+    font-size: 2.8rem;
+    font-weight: 500;
+    color: var(--accent-light);
+    font-family: inherit;
+    box-shadow: inset 0.5rem 0.5rem 1rem 0 rgba(170, 188, 221, 0.6);
+    transition: box-shadow 0.2s ease;
+
+    &:focus-visible {
+      box-shadow: inset 0.5rem 0.5rem 1rem 0 rgba(170, 188, 221, 0.85);
+    }
+  }
+
+  &__error {
+    font-size: 2.4rem;
+    font-weight: 400;
+    color: #ff5d5d;
+    text-align: center;
+    height: 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+
+    &--visible {
+      opacity: 1;
+    }
+  }
+
+  &__submit {
+    width: 100%;
+    height: 6rem;
+    background: var(--surface-inset);
+    border-radius: 2rem;
+    border: none;
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--accent-dark);
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s ease;
+
+    &:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    &:active {
+      box-shadow: var(--shadow-inner);
+    }
+  }
+}

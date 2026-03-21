@@ -1,0 +1,410 @@
+// =====================================================
+//  Выбор месяца
+// =====================================================
+.month-selector {
+  width: fit-content;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-sm);
+  display: block;
+  flex-shrink: 0;
+  position: relative;
+
+  &[open],
+  &--open {
+    z-index: 5;
+    box-shadow: var(--shadow-lg);
+  }
+
+  &__summary {
+    list-style: none;
+    width: 20rem;
+    height: 5.4rem;
+    border-radius: 2rem;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    cursor: pointer;
+    user-select: none;
+
+    &::-webkit-details-marker { display: none; }
+  }
+
+  &__label {
+    font-size: 2.4rem;
+    font-weight: 500;
+    color: var(--accent-dark);
+    white-space: nowrap;
+  }
+
+  &__icon {
+    width: 1.7rem;
+    height: 0.9rem;
+    display: block;
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+    object-fit: contain;
+  }
+
+  &__menu {
+    position: absolute;
+    top: calc(100% + 1.2rem);
+    left: 0;
+    width: max-content;
+    min-width: 100%;
+    height: 42rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    background: var(--surface-inset);
+    border-radius: 2rem;
+    box-shadow: var(--shadow-lg);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+    &::-webkit-scrollbar { width: 0; height: 0; }
+  }
+
+  &__option {
+    width: 100%;
+    min-height: 5.2rem;
+    border-radius: 1.6rem;
+    background: var(--surface-inset);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.4rem;
+    font-weight: 500;
+    color: var(--accent-dark);
+    white-space: nowrap;
+    transition: box-shadow 0.2s ease;
+
+    &:hover { box-shadow: var(--shadow-lg); }
+    &:active { box-shadow: var(--shadow-inner); }
+
+    &--active {
+      box-shadow: none;
+      position: relative;
+      pointer-events: none;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        box-shadow: var(--shadow-inner);
+        pointer-events: none;
+      }
+    }
+  }
+}
+
+// =====================================================
+//  Виджет календаря
+// =====================================================
+.calendar-widget {
+  flex: 1;
+  width: 100%;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  display: flex;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: var(--shadow-inner);
+    pointer-events: none;
+    z-index: 10;
+  }
+}
+
+// =====================================================
+//  Диаграмма Ганта
+// =====================================================
+.gantt {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 0 0;
+  overflow: hidden;
+
+  // ----- Зона скролла -----
+  &__scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    scrollbar-width: thin;
+    overflow: auto;
+    scrollbar-color: rgba(74, 85, 104, 0.25) transparent;
+
+    &::-webkit-scrollbar       { width: 0.6rem; height: 0.6rem; }
+    &::-webkit-scrollbar-thumb { background: rgba(74, 85, 104, 0.25); border-radius: 1rem; }
+    &::-webkit-scrollbar-track { background: transparent; }
+  }
+
+  // ----- Внутренний контейнер (растягивается под скролл) -----
+  &__inner {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding: 0 0.5rem 0.5rem;
+  }
+
+  // ----- Шапка -----
+  &__header {
+    display: flex;
+    align-items: stretch;
+    flex-shrink: 0;
+    padding-bottom: 1rem;
+    border-bottom: 0.1rem solid rgba(74, 85, 104, 0.1);
+    position: sticky;
+    top: 0;
+    background: var(--surface-inset);
+    z-index: 4;
+  }
+
+  &__days {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+  }
+
+  &__day-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    position: relative;
+
+    &--today {
+      .gantt__day-num { color: var(--accent-dark); font-weight: 700; }
+      .gantt__day-name { color: var(--accent-dark); font-weight: 700; }
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -1.2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 50%;
+        background: var(--accent-dark);
+      }
+    }
+
+    &--weekend {
+      .gantt__day-num  { color: var(--danger); opacity: 0.7; }
+      .gantt__day-name { color: var(--danger); opacity: 0.7; }
+    }
+  }
+
+  &__day-num {
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--accent-light);
+    line-height: 1;
+  }
+
+  &__day-name {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--accent-light);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  // ----- Тело -----
+  // ----- Единое поле -----
+  &__field {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    background-image: repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent calc((100% / var(--total-days)) - 0.1rem),
+      rgba(74, 85, 104, 0.18) calc((100% / var(--total-days)) - 0.1rem),
+      rgba(74, 85, 104, 0.18) calc(100% / var(--total-days))
+    );
+  }
+
+  &__today-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0.2rem;
+    background: var(--danger);
+    opacity: 0.6;
+    z-index: 3;
+    transform: translateX(-50%);
+  }
+
+  // ----- Бар задачи -----
+  &__bar {
+    position: absolute;
+    height: 5.4rem; // = BAR_H
+    border-radius: 2rem;
+    z-index: 1;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.4rem;
+    gap: 1rem;
+    transition: filter 0.15s ease;
+    cursor: pointer;
+
+    &:hover { filter: brightness(1.06); }
+
+    &--task       { background: var(--category-task); }
+    &--discussion { background: var(--category-discussion); }
+    &--education  { background: var(--category-education); }
+    &--routine    { background: var(--category-routine); }
+    &--other      { background: var(--category-other); }
+  }
+
+  &__bar-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+    transition: width 0.3s ease;
+  }
+
+  &__bar-name {
+    position: relative;
+    z-index: 1;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+    text-shadow: 0 0.1rem 0.3rem rgba(0, 0, 0, 0.15);
+  }
+
+  &__bar-progress {
+    position: relative;
+    z-index: 1;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-shadow: 0 0.1rem 0.3rem rgba(0, 0, 0, 0.15);
+  }
+}
+
+// =====================================================
+//  Правая панель: подробности задания
+// =====================================================
+.task-details {
+  width: 58rem;
+  height: 100%;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 3.8rem;
+  padding: 1.5rem 2rem 2.5rem;
+  flex-shrink: 0;
+  z-index: 1;
+  min-height: 0;
+
+  &__title {
+    font-size: 3.5rem;
+    font-weight: 500;
+    color: var(--accent-dark);
+    text-align: center;
+    width: 100%;
+    padding: 0 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+  }
+
+  &__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  &__meta-row {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  &__meta-label {
+    font-size: 2.4rem;
+    font-weight: 500;
+    color: var(--accent-dark);
+    white-space: nowrap;
+  }
+
+  &__meta-value {
+    min-width: 9.5rem;
+    background: var(--surface-inset);
+    border-radius: 2rem;
+    padding: 1rem 1.5rem;
+    font-size: 2.4rem;
+    font-weight: 500;
+    text-align: center;
+    position: relative;
+    white-space: nowrap;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow: inset -0.5rem -0.5rem 1rem 0 #ffffff,
+        inset 0.5rem 0.5rem 1rem 0 rgba(170, 188, 221, 0.6);
+      pointer-events: none;
+    }
+  }
+
+  &__description {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    background: var(--surface-inset);
+    border-radius: 2rem;
+    padding: 2.5rem 3rem;
+    overflow: auto;
+    box-shadow: var(--shadow-inner);
+    font-size: 2.4rem;
+    font-weight: 500;
+    line-height: normal;
+    color: var(--accent-dark);
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar { width: 0; height: 0; }
+  }
+}

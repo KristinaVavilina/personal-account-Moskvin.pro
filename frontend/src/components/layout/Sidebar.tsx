@@ -1,18 +1,62 @@
-import React from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import moskvinLogo from '../../assets/icons/moskvin-logo.svg';
+import progressIcon from '../../assets/icons/progress-icon.svg';
+import knowledgeBaseIcon from '../../assets/icons/knowlege-base-icon.svg';
+import employeesIcon from '../../assets/icons/employees-icon.svg';
+import profileIcon from '../../assets/icons/profile-icon.svg';
 import './Sidebar.scss';
 
+const DASHBOARD_PATHS = ['/statistics', '/reporting', '/calendar'];
+
 export const Sidebar = () => {
+  const { pathname } = useLocation();
+  const isDashboardActive = DASHBOARD_PATHS.some((p) => pathname.startsWith(p));
+
   return (
     <aside className="sidebar">
-      <div className="sidebar__logo">🍀</div>
-      <nav className="sidebar__nav">
-        <button className="nav-btn nav-btn--active">📊</button>
-        <button className="nav-btn">📚</button>
-        <button className="nav-btn">👥</button>
+      <a
+        href="https://moskvin.pro/"
+        className="sidebar__logo sidebar__item"
+        aria-label="На сайт"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <img src={moskvinLogo} alt="Moskvin Logo" />
+      </a>
+
+      <nav className="sidebar__menu" aria-label="Боковое меню">
+        <NavLink
+          to="/statistics"
+          className={'sidebar__item' + (isDashboardActive ? ' sidebar__item--active' : '')}
+          aria-label="Прогресс"
+        >
+          <img src={progressIcon} alt="Прогресс" />
+        </NavLink>
+        <NavLink
+          to="#"
+          className="sidebar__item"
+          aria-label="База знаний"
+        >
+          <img src={knowledgeBaseIcon} alt="База знаний" />
+        </NavLink>
+        <NavLink
+          to="#"
+          className="sidebar__item"
+          aria-label="Сотрудники"
+        >
+          <img src={employeesIcon} alt="Сотрудники" />
+        </NavLink>
       </nav>
-      <div className="sidebar__profile">
-        <button className="nav-btn">👤</button>
-      </div>
+
+      <NavLink
+        to="/profile"
+        className={({ isActive }) =>
+          'sidebar__profile sidebar__item' + (isActive ? ' sidebar__item--active' : '')
+        }
+        aria-label="Профиль"
+      >
+        <img src={profileIcon} alt="Профиль" />
+      </NavLink>
     </aside>
   );
 };

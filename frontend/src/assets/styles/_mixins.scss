@@ -1,24 +1,24 @@
-@import 'variables';
+@use 'variables' as v;
 
 // Выпуклый элемент (кнопки, карточки)
 @mixin neomorph-convex {
-  background: $bg-color;
-  box-shadow: 6px 6px 12px $shadow-dark, 
-             -6px -6px 12px $shadow-light;
+  background: v.$bg-color;
+  box-shadow: 6px 6px 12px v.$shadow-dark,
+             -6px -6px 12px v.$shadow-light;
   border-radius: 12px;
 }
 
 // Вдавленный элемент (инпуты, фоны для списков)
 @mixin neomorph-concave {
-  background: $bg-color;
-  box-shadow: inset 4px 4px 8px $shadow-dark, 
-              inset -4px -4px 8px $shadow-light;
+  background: v.$bg-color;
+  box-shadow: inset 4px 4px 8px v.$shadow-dark,
+              inset -4px -4px 8px v.$shadow-light;
   border-radius: 12px;
 }
 
 // Эффект при наведении/нажатии на кнопку
 @mixin neomorph-active {
-  background: $bg-color;
-  box-shadow: inset 4px 4px 8px $shadow-dark, 
-              inset -4px -4px 8px $shadow-light;
+  background: v.$bg-color;
+  box-shadow: inset 4px 4px 8px v.$shadow-dark,
+              inset -4px -4px 8px v.$shadow-light;
 }

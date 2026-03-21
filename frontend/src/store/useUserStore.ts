@@ -8,7 +8,7 @@ interface UserState {
 }
 
 export const useUserStore = create<UserState>((set) => ({
-  isAuthenticated: false, // Измени на true для быстрого теста внутренних страниц
+  isAuthenticated: true,
   user: null,
   login: (name, role) => set({ isAuthenticated: true, user: { name, role } }),
   logout: () => set({ isAuthenticated: false, user: null }),
