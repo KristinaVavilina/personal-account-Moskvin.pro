@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Аккаунт — Moskvin.pro</title>
+  <link rel="stylesheet" href="Profile.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="page">
+
+    <!-- ===== Боковая панель ===== -->
+    <aside class="sidebar">
+      <a href="https://moskvin.pro/" class="sidebar__logo" role="button" aria-label="На сайт" target="_blank" rel="noopener noreferrer" aria-selected="false" data-item="logo">
+        <img src="../../assets/icons/moskvin-logo.svg" alt="Moskvin Logo">
+      </a>
+      <nav class="sidebar__menu" aria-label="Боковое меню">
+        <a href="Statistics.html" class="sidebar__item" role="button" aria-selected="false" data-item="progress">
+          <img src="../../assets/icons/progress-icon.svg" alt="Progress">
+        </a>
+        <a href="#" class="sidebar__item" role="button" aria-selected="false" data-item="knowledge-base">
+          <img src="../../assets/icons/knowlege-base-icon.svg" alt="Knowlege Base">
+        </a>
+        <a href="#" class="sidebar__item" role="button" aria-selected="false" data-item="employees">
+          <img src="../../assets/icons/employees-icon.svg" alt="Employees">
+        </a>
+      </nav>
+      <a href="Profile.html" class="sidebar__profile sidebar__item--active" role="button" aria-selected="true" data-active="true" data-item="profile">
+        <img src="../../assets/icons/profile-icon.svg" alt="Profile">
+      </a>
+    </aside>
+
+    <!-- ===== Основной контент ===== -->
+    <main class="main-content">
+      <section class="account-card" aria-label="Данные аккаунта">
+        <div class="account-card__inner-shadow" aria-hidden="true"></div>
+
+        <div class="account-card__content">
+          <div class="account-header">
+            <div class="account-avatar" aria-label="Аватар пользователя">
+              <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=256&h=256&q=60" alt="Фото профиля">
+            </div>
+            <div class="account-role" aria-label="Роль пользователя">Разработчик</div>
+          </div>
+
+          <form class="account-form" aria-label="Форма профиля">
+            <div class="account-grid">
+              <div class="field">
+                <label class="field__label" for="firstName">Имя</label>
+                <div class="field__control">
+                  <input class="field__input" id="firstName" name="firstName" type="text" value="Иван" readonly>
+                  <button class="field__icon" type="button" aria-label="Поле недоступно для редактирования"></button>
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="field__label" for="lastName">Фамилия</label>
+                <div class="field__control">
+                  <input class="field__input" id="lastName" name="lastName" type="text" value="Иванов" readonly>
+                  <button class="field__icon" type="button" aria-label="Поле недоступно для редактирования"></button>
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="field__label" for="patronymic">Отчество</label>
+                <div class="field__control">
+                  <input class="field__input" id="patronymic" name="patronymic" type="text" value="Иванович" readonly>
+                  <button class="field__icon" type="button" aria-label="Поле недоступно для редактирования"></button>
+                </div>
+              </div>
+
+              <div class="field">
+                <label class="field__label" for="email">Email</label>
+                <div class="field__control">
+                  <input class="field__input" id="email" name="email" type="email" value="1234@mail.com" readonly>
+                  <button class="field__icon" type="button" aria-label="Поле недоступно для редактирования"></button>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <div class="account-actions" aria-label="Действия аккаунта">
+            <button class="btn btn--action" type="button">Сменить пароль</button>
+            <button class="btn btn--action" type="button">Выйти из аккаунта</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

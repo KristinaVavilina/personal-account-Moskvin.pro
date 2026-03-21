@@ -1,0 +1,44 @@
+@use "../../assets/styles/mixins.scss" as mix;
+@use "../../assets/styles/variables.scss" as var;
+
+.sidebar {
+  width: 90px;
+  height: calc(100vh - 60px); // Высота на весь экран минус падинги страницы
+  @include mix.neomorph-convex;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 0;
+
+  &__logo {
+    font-size: 30px;
+  }
+
+  &__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .nav-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    @include mix.neomorph-convex;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    transition: all 0.2s ease;
+
+    &--active {
+      @include mix.neomorph-concave; // Вдавленная для активной страницы
+    }
+
+    &:hover {
+      transform: scale(1.02);
+    }
+  }
+}

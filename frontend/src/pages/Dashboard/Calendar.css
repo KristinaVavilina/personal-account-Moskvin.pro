@@ -1,0 +1,635 @@
+/* ===================================================
+   Масштабирование: 1rem = 10px при ширине 1920px.
+   =================================================== */
+html {
+  font-size: clamp(6px, calc(100vw / 192), 10px);
+}
+
+/* ===================================================
+   CSS-переменные: дизайн-токены из Figma
+   =================================================== */
+:root {
+  --surface-inset: #e4ebf1;
+  --accent-dark: #4a5568;
+  --accent-light: #64748b;
+
+  /* Категории */
+  --category-task: #fbb67b;
+  --category-discussion: #90d04e;
+  --category-other: #7da0fa;
+  --category-education: #b9a2f8;
+  --category-routine: #8b6449;
+
+  /* Neumorphism тени */
+  --shadow-lg: -1rem -1rem 2rem 0 #ffffff, 1rem 1rem 2rem 0 rgba(170, 188, 221, 0.6);
+  --shadow-sm: -0.5rem -0.5rem 1rem 0 #ffffff, 0.5rem 0.5rem 1rem 0 rgba(170, 188, 221, 0.6);
+  --shadow-inner: inset -0.5rem -0.5rem 1rem 0 #ffffff, inset 0.5rem 0.5rem 1rem 0 #aabcdd;
+  --shadow-inner-lg: inset -1rem -1rem 2rem 0 #ffffff, inset 1rem 1rem 2rem 0 rgba(170, 188, 221, 0.6);
+  --shadow-inner-subtle: inset 0 0 1rem 0 #aabcdd;
+
+  /* Отдельные тени из Calendar макета */
+  --shadow-day: -0.5rem -0.5rem 1rem 0 #ffffff, 0.5rem 0.5rem 1rem 0 rgba(22, 27, 29, 0.23);
+}
+
+/* ===================================================
+   Сброс стилей
+   =================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+ul { list-style: none; }
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  background: none;
+  color: inherit;
+}
+
+img { display: block; }
+
+/* ===================================================
+   Базовые стили
+   =================================================== */
+body {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 500;
+  background: var(--surface-inset);
+  color: var(--accent-dark);
+  min-height: 100vh;
+}
+
+/* ===================================================
+   Разметка страницы
+   =================================================== */
+.page {
+  display: flex;
+  gap: 3rem;
+  padding: 3rem;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--surface-inset);
+}
+
+/* ===================================================
+   Боковая панель (Sidebar) — копия из Statistics.css
+   =================================================== */
+.sidebar {
+  width: 9rem;
+  height: 100%;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 1rem;
+  flex-shrink: 0;
+  z-index: 3;
+}
+
+.sidebar__logo,
+.sidebar__item,
+.sidebar__profile {
+  width: 6rem;
+  height: 6rem;
+  background: var(--surface-inset);
+  border-radius: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  flex-shrink: 0;
+}
+
+.sidebar__logo {
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+}
+.sidebar__logo:hover { box-shadow: var(--shadow-lg); }
+.sidebar__logo:active { box-shadow: var(--shadow-inner); }
+.sidebar__logo img {
+  width: 3.5rem;
+  height: auto;
+  object-fit: contain;
+}
+
+.sidebar__menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: center;
+  width: 6rem;
+}
+
+.sidebar__item {
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+}
+.sidebar__item:hover { box-shadow: var(--shadow-lg); }
+.sidebar__item:active { box-shadow: var(--shadow-inner); }
+.sidebar__item img {
+  width: 3.5rem;
+  height: auto;
+  object-fit: contain;
+}
+
+.sidebar__item--active,
+.sidebar__item[aria-selected="true"] {
+  box-shadow: none;
+  position: relative;
+}
+
+/* Активный пункт меню не должен нажиматься */
+.sidebar__item--active,
+.sidebar__item[aria-selected="true"],
+.sidebar__profile.sidebar__item--active,
+.sidebar__profile[aria-selected="true"] {
+  pointer-events: none;
+  cursor: default;
+}
+
+/* У активного пункта нет hover-эффекта */
+.sidebar__item--active:hover,
+.sidebar__item[aria-selected="true"]:hover {
+  box-shadow: none;
+  cursor: default;
+}
+.sidebar__item--active::after,
+.sidebar__item[aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0.5rem 0.5rem 1rem 0 #aabcdd, inset -0.5rem -0.5rem 1rem 0 #ffffff;
+  pointer-events: none;
+}
+.sidebar__item[aria-selected="true"]:hover { box-shadow: none; }
+
+.sidebar__profile {
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+}
+.sidebar__profile:hover { box-shadow: var(--shadow-lg); }
+.sidebar__profile:active { box-shadow: var(--shadow-inner); }
+.sidebar__profile img {
+  width: 3.5rem;
+  height: auto;
+  object-fit: contain;
+}
+
+/* ===================================================
+   Основной контент
+   =================================================== */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  height: 100%;
+  min-width: 0;
+  z-index: 2;
+}
+
+/* ===================================================
+   Вкладки страницы (Page Tabs) — копия из Statistics.css
+   =================================================== */
+.page-tabs {
+  height: 7rem;
+  background: var(--surface-inset);
+  border-radius: 4.5rem;
+  box-shadow: -1rem -1rem 2rem 0 #fafbff, 1rem 1rem 2rem 0 rgba(170, 188, 221, 0.6);
+  display: flex;
+  gap: 9rem;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  flex-shrink: 0;
+}
+
+.page-tabs__item {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2rem;
+  font-size: 2.4rem;
+  font-weight: 500;
+  color: var(--accent-dark);
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, color 0.2s ease;
+}
+.page-tabs__item:hover { box-shadow: var(--shadow-lg); }
+.page-tabs__item:active { box-shadow: var(--shadow-inner); }
+
+.page-tabs__item--active {
+  box-shadow: none;
+  position: relative;
+  pointer-events: none;
+}
+.page-tabs__item--active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--shadow-inner);
+  pointer-events: none;
+}
+
+/* ===================================================
+   Выбор месяца
+   =================================================== */
+.month-selector {
+  width: fit-content;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-sm);
+  padding: 0;
+  display: block;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.month-selector__summary {
+  list-style: none;
+  width: 20rem;
+  height: 5.4rem;
+  border-radius: 2rem;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.month-selector__summary::-webkit-details-marker {
+  display: none;
+}
+
+.month-selector[open] {
+  z-index: 5;
+  box-shadow: var(--shadow-lg);
+}
+
+.month-selector[open] .month-selector__icon {
+  transform: rotate(0deg);
+}
+
+.month-selector__label {
+  font-size: 2.4rem;
+  font-weight: 500;
+  color: var(--accent-dark);
+  white-space: nowrap;
+}
+
+.month-selector__icon {
+  width: 1.7rem;
+  height: 0.9rem;
+  display: block;
+  position: relative;
+  transform: rotate(180deg);
+  transition: transform 0.15s ease;
+}
+.month-selector__icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--accent-dark);
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+  border-radius: 0.2rem;
+  opacity: 0.9;
+}
+
+.month-selector__menu {
+  position: absolute;
+  top: calc(100% + 1.2rem);
+  left: 0;
+  width: max-content;
+  min-width: 100%;
+  height: 42rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none; /* Firefox */
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.month-selector__menu::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.month-selector__option {
+  width: 100%;
+  min-height: 5.2rem;
+  border-radius: 1.6rem;
+  background: var(--surface-inset);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+  font-weight: 500;
+  color: var(--accent-dark);
+  white-space: nowrap;
+  transition: box-shadow 0.2s ease;
+}
+
+.month-selector__option:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.month-selector__option:active {
+  box-shadow: var(--shadow-inner);
+}
+
+.month-selector__option--active,
+.month-selector__option[aria-selected="true"] {
+  box-shadow: none;
+  position: relative;
+}
+
+.month-selector__option--active::after,
+.month-selector__option[aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--shadow-inner);
+  pointer-events: none;
+}
+
+/* ===================================================
+   Календарь (таймлайн)
+   =================================================== */
+.calendar-widget {
+  flex: 1;
+  width: 100%;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  display: flex;
+}
+
+.calendar-widget__inner-shadow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: var(--shadow-inner-lg);
+  z-index: 2;
+}
+
+.calendar-widget__empty {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: var(--accent-light);
+  font-size: 2.6rem;
+  font-weight: 500;
+  text-align: center;
+  user-select: none;
+}
+
+.calendar-widget__empty::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--shadow-inner);
+  pointer-events: none;
+}
+
+.calendar-viewport {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  padding: 1.5rem;
+  overflow: auto;
+  z-index: 1;
+  scrollbar-width: none;
+}
+.calendar-viewport::-webkit-scrollbar { width: 0; height: 0; }
+
+.calendar-grid {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  width: max-content;
+  padding: 0 0.5rem 2rem;
+  position: relative;
+  min-height: 60rem;
+}
+
+.calendar-day {
+  width: 8.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.calendar-day__badge {
+  width: 6.5rem;
+  height: 6.5rem;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-day);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--accent-dark);
+  user-select: none;
+}
+
+.calendar-day__num {
+  font-size: 3rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.calendar-day__dow {
+  font-size: 2rem;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.calendar-day__line {
+  width: 100%;
+  flex: 1;
+  min-height: 57.1rem;
+  border-left: 0.05rem solid #1c1c1c;
+  border-right: 0.05rem solid #1c1c1c;
+  opacity: 0.9;
+}
+
+.calendar-events {
+  position: absolute;
+  left: 1.5rem;
+  top: 1.5rem;
+  width: 170.2rem;
+  height: 48.7rem;
+  pointer-events: none;
+}
+
+.calendar-event {
+  position: absolute;
+  left: var(--left, 0rem);
+  top: var(--top, 0rem);
+  width: 73rem;
+  height: 8.6rem;
+  border-radius: 2rem;
+  box-shadow: var(--shadow-day);
+  padding: 1rem 2.8rem 1rem 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  opacity: var(--opacity, 1);
+  color: var(--accent-dark);
+}
+
+.calendar-event__title,
+.calendar-event__value {
+  font-size: 2rem;
+  font-weight: 500;
+  line-height: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-event__value {
+  flex-shrink: 0;
+  max-width: 10rem;
+  text-align: right;
+}
+
+.calendar-event--task { background: var(--category-task); }
+.calendar-event--education { background: var(--category-education); }
+.calendar-event--discussion { background: var(--category-discussion); }
+.calendar-event--other { background: var(--category-other); }
+.calendar-event--routine { background: var(--category-routine); }
+
+/* ===================================================
+   Правая панель: Подробности по заданию
+   =================================================== */
+.task-details {
+  width: 58rem;
+  height: 100%;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 3.8rem;
+  padding: 1.5rem 2rem 2.5rem;
+  flex-shrink: 0;
+  z-index: 1;
+  min-height: 0;
+}
+
+.task-details__title {
+  font-size: 3.5rem;
+  font-weight: 500;
+  color: var(--accent-dark);
+  text-align: center;
+  width: 100%;
+  padding: 0 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.task-details__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.task-details__meta-row {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.task-details__meta-label {
+  font-size: 2.4rem;
+  font-weight: 500;
+  color: var(--accent-dark);
+  white-space: nowrap;
+}
+
+.task-details__meta-value {
+  min-width: 9.5rem;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  padding: 1rem 1.5rem;
+  font-size: 2.4rem;
+  font-weight: 500;
+  text-align: center;
+  position: relative;
+  white-space: nowrap;
+}
+.task-details__meta-value::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset -0.5rem -0.5rem 1rem 0 #ffffff, inset 0.5rem 0.5rem 1rem 0 rgba(170, 188, 221, 0.6);
+  pointer-events: none;
+}
+
+.task-details__description {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  padding: 2.5rem 3rem;
+  overflow: auto;
+  box-shadow: var(--shadow-inner);
+  font-size: 2.4rem;
+  font-weight: 500;
+  line-height: normal;
+  color: var(--accent-dark);
+  scrollbar-width: none;
+}
+.task-details__description::-webkit-scrollbar { width: 0; height: 0; }
+

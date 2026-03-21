@@ -1,0 +1,23 @@
+@import 'variables';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: $bg-color;
+  color: $text-main;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+// Убираем стандартные стили для кнопок и инпутов
+button, input {
+  border: none;
+  outline: none;
+  font-family: inherit;
+  color: inherit;
+}

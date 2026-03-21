@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Календарь — Moskvin.pro</title>
+  <link rel="stylesheet" href="Calendar.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="page">
+
+    <!-- ===== Боковая панель ===== -->
+    <aside class="sidebar">
+      <a href="https://moskvin.pro/" class="sidebar__logo" role="button" aria-label="На сайт" target="_blank" rel="noopener noreferrer" aria-selected="false" data-item="logo">
+        <img src="../../assets/icons/moskvin-logo.svg" alt="Moskvin Logo">
+      </a>
+      <nav class="sidebar__menu" aria-label="Боковое меню">
+        <a href="Statistics.html" class="sidebar__item sidebar__item--active" role="button" aria-selected="true" data-active="true" data-item="progress">
+          <img src="../../assets/icons/progress-icon.svg" alt="Progress">
+        </a>
+        <a href="#" class="sidebar__item" role="button" aria-selected="false" data-item="knowledge-base">
+          <img src="../../assets/icons/knowlege-base-icon.svg" alt="Knowlege Base">
+        </a>
+        <a href="#" class="sidebar__item" role="button" aria-selected="false" data-item="employees">
+          <img src="../../assets/icons/employees-icon.svg" alt="Employees">
+        </a>
+      </nav>
+      <a href="Profile.html" class="sidebar__profile" role="button" aria-selected="false" data-item="profile">
+        <img src="../../assets/icons/profile-icon.svg" alt="Profile">
+      </a>
+    </aside>
+
+    <!-- ===== Основной контент ===== -->
+    <main class="main-content">
+
+      <!-- Вкладки страниц -->
+      <div class="page-tabs" role="tablist" aria-label="Навигация по страницам">
+        <a href="Statistics.html" class="page-tabs__item" role="tab" aria-selected="false" data-tab="progress">Прогресс</a>
+        <a href="Reporting.html" class="page-tabs__item" role="tab" aria-selected="false" data-tab="reporting">Отчёт</a>
+        <a href="Calendar.html" class="page-tabs__item page-tabs__item--active" role="tab" aria-selected="true" data-active="true" data-tab="calendar">Календарь</a>
+      </div>
+
+      <!-- Выбор месяца (без JS): раскрывающийся список ссылок -->
+      <details class="month-selector" data-selected-month="Август">
+        <summary class="month-selector__summary" aria-label="Выбрать месяц">
+          <span class="month-selector__label">Август</span>
+          <span class="month-selector__icon" aria-hidden="true"></span>
+        </summary>
+        <div class="month-selector__menu" role="listbox" aria-label="Месяц">
+          <button class="month-selector__option" type="button" role="option" aria-selected="false">Январь</button>
+          <button class="month-selector__option" type="button" role="option" aria-selected="false">Февраль</button>
+          <button class="month-selector__option" type="button" role="option" aria-selected="false">Март</button>
+          <button class="month-selector__option" type="button" role="option" aria-selected="false">Апрель</button>
+          <button class="month-selector__option" type="button" role="option" aria-selected="false">Май</button>
+          <button class="month-selector__option" type="button" role="option" aria-selected="false">Июнь</button>
+          <button class="month-selector__option" type="button" role="option" aria-selected="false">Июль</button>
+          <button class="month-selector__option month-selector__option--active" type="button" role="option" aria-selected="true">Август</button>
+          <button class="month-selector__option" type="button" role="option" aria-selected="false">Сентябрь</button>
+          <button class="month-selector__option" type="button" role="option" aria-selected="false">Октябрь</button>
+          <button class="month-selector__option" type="button" role="option" aria-selected="false">Ноябрь</button>
+          <button class="month-selector__option" type="button" role="option" aria-selected="false">Декабрь</button>
+        </div>
+      </details>
+
+      <!-- Календарь (таймлайн) -->
+      <section class="calendar-widget" aria-label="Календарь">
+        <div class="calendar-widget__empty" aria-hidden="true">Скоро будет добавлено</div>
+      </section>
+
+    </main>
+
+    <!-- ===== Правая панель: Подробности по заданию ===== -->
+    <aside class="task-details" aria-label="Подробности по заданию">
+      <h2 class="task-details__title">Подробности по заданию</h2>
+
+      <div class="task-details__meta">
+        <div class="task-details__meta-row">
+          <p class="task-details__meta-label">Прогресс выполнения:</p>
+          <div class="task-details__meta-value">40%</div>
+        </div>
+        <div class="task-details__meta-row">
+          <p class="task-details__meta-label">Тип задания:</p>
+          <div class="task-details__meta-value">Рутина</div>
+        </div>
+      </div>
+
+      <div class="task-details__description">
+        В рамках спецификации современных стандартов, акционеры крупнейших компаний представляют собой не что иное, как квинтэссенцию победы маркетинга над разумом и должны быть указаны как претенденты на роль ключевых факторов. А ещё предприниматели в сети интернет лишь добавляют фракционных разногласий и объективно рассмотрены соответствующими инстанциями. Также как сложившаяся структура организации требует от нас анализа соответствующих условий активизации. В рамках спецификации современных стандартов, акционеры крупнейших компаний представляют собой не что иное, как квинтэссенцию победы маркетинга над разумом и должны быть указаны как претенденты на роль ключевых факторов. А ещё предприниматели в сети интернет лишь добавляют фракционных разногласий и объективно рассмотрены соответствующими инстанциями. Также как сложившаяся структура организации требует от нас анализа соответствующих условий активизации.
+      </div>
+    </aside>
+
+  </div>
+</body>
+</html>
