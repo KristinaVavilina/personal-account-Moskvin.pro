@@ -1,37 +1,45 @@
 import { useState } from 'react';
 import closeIcon from '../../assets/icons/close-icon.svg';
+import deleteTaskIcon from '../../assets/icons/delete-task-icon.svg';
 import dropdownArrowIcon from '../../assets/icons/dropdown-arrow-icon.svg';
-import { handleOverlayClick, labelToProgressNumber } from '../../utils';
+import { handleOverlayClick, labelToProgressNumber, progressToDropdownLabel } from '../../utils';
 import { TASK_TYPES, TASK_PROGRESS } from '../../constants';
 import type { TaskListItem } from './taskListTypes';
 import './AddTaskModal.scss';
+import './EditTaskModal.scss';
 
-interface AddTaskModalProps {
+interface EditTaskModalProps {
+  task: TaskListItem;
   onClose: () => void;
-  onAdd: (task: TaskListItem) => void;
+  onSave: (updated: TaskListItem) => void;
+  onDelete: (id: string) => void;
 }
 
-export const AddTaskModal = ({ onClose, onAdd }: AddTaskModalProps) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [taskType, setTaskType] = useState<string | null>(null);
-  const [taskProgress, setTaskProgress] = useState<string | null>(null);
+export const EditTaskModal = ({ task, onClose, onSave, onDelete }: EditTaskModalProps) => {
+  const [name, setName] = useState(task.name);
+  const [description, setDescription] = useState(task.description ?? '');
+  const [taskType, setTaskType] = useState<string>(
+    task.taskType && TASK_TYPES.includes(task.taskType) ? task.taskType : TASK_TYPES[0],
+  );
+  const [taskProgress, setTaskProgress] = useState<string>(() => progressToDropdownLabel(task.progress));
   const [openDropdown, setOpenDropdown] = useState<'type' | 'progress' | null>(null);
 
-  const toggleDropdown = (name: 'type' | 'progress') =>
-    setOpenDropdown((prev) => (prev === name ? null : name));
-
-  const canSave = name.trim().length > 0;
+  const toggleDropdown = (dropdown: 'type' | 'progress') =>
+    setOpenDropdown((prev) => (prev === dropdown ? null : dropdown));
 
   const handleSave = () => {
-    if (!canSave) return;
-    onAdd({
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      description: description.trim(),
-      taskType: taskType ?? TASK_TYPES[0],
-      progress: labelToProgressNumber(taskProgress ?? TASK_PROGRESS[0]),
+    onSave({
+      ...task,
+      name,
+      description,
+      taskType,
+      progress: labelToProgressNumber(taskProgress),
     });
+    onClose();
+  };
+
+  const handleDelete = () => {
+    onDelete(task.id);
     onClose();
   };
 
@@ -41,14 +49,14 @@ export const AddTaskModal = ({ onClose, onAdd }: AddTaskModalProps) => {
         className="modal-task"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-task-title"
+        aria-labelledby="modal-edit-task-title"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-task__header">
-          <h2 className="modal-task__title" id="modal-task-title">
-            Добавление нового задания
+          <h2 className="modal-task__title" id="modal-edit-task-title">
+            Редактирование задания
           </h2>
-          <button type="button" className="modal-task__close-btn" onClick={onClose} aria-label="Закрыть">
+          <button className="modal-task__close-btn" onClick={onClose} aria-label="Закрыть" type="button">
             <img src={closeIcon} alt="" />
           </button>
         </div>
@@ -74,7 +82,7 @@ export const AddTaskModal = ({ onClose, onAdd }: AddTaskModalProps) => {
                   aria-expanded={openDropdown === 'type'}
                   aria-label="Выбрать тип задания"
                 >
-                  <span className="type-selector__label">{taskType ?? 'Выбрать'}</span>
+                  <span className="type-selector__label">{taskType}</span>
                   <img
                     className="type-selector__icon"
                     src={dropdownArrowIcon}
@@ -88,9 +96,11 @@ export const AddTaskModal = ({ onClose, onAdd }: AddTaskModalProps) => {
                   <div className="type-selector__menu" role="listbox" aria-label="Тип задания">
                     {TASK_TYPES.map((type) => (
                       <button
-                        type="button"
                         key={type}
-                        className={'type-selector__option' + (type === taskType ? ' type-selector__option--active' : '')}
+                        type="button"
+                        className={
+                          'type-selector__option' + (type === taskType ? ' type-selector__option--active' : '')
+                        }
                         role="option"
                         aria-selected={type === taskType}
                         onClick={() => {
@@ -116,7 +126,7 @@ export const AddTaskModal = ({ onClose, onAdd }: AddTaskModalProps) => {
                   aria-expanded={openDropdown === 'progress'}
                   aria-label="Выбрать прогресс"
                 >
-                  <span className="type-selector__label">{taskProgress ?? 'Выбрать'}</span>
+                  <span className="type-selector__label">{taskProgress}</span>
                   <img
                     className="type-selector__icon"
                     src={dropdownArrowIcon}
@@ -130,9 +140,12 @@ export const AddTaskModal = ({ onClose, onAdd }: AddTaskModalProps) => {
                   <div className="type-selector__menu" role="listbox" aria-label="Прогресс по заданию">
                     {TASK_PROGRESS.map((value) => (
                       <button
-                        type="button"
                         key={value}
-                        className={'type-selector__option' + (value === taskProgress ? ' type-selector__option--active' : '')}
+                        type="button"
+                        className={
+                          'type-selector__option' +
+                          (value === taskProgress ? ' type-selector__option--active' : '')
+                        }
                         role="option"
                         aria-selected={value === taskProgress}
                         onClick={() => {
@@ -158,13 +171,16 @@ export const AddTaskModal = ({ onClose, onAdd }: AddTaskModalProps) => {
           </div>
         </div>
 
-        <div className="modal-task__footer">
+        <div className="modal-task__footer modal-task__footer--edit">
           <button
             type="button"
-            className="modal-task__save-btn"
-            disabled={!canSave}
-            onClick={handleSave}
+            className="modal-task__delete-btn"
+            onClick={handleDelete}
+            aria-label="Удалить задание"
           >
+            <img src={deleteTaskIcon} alt="" />
+          </button>
+          <button type="button" className="modal-task__save-btn" onClick={handleSave}>
             Сохранить
           </button>
         </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthCard } from '../../components/layout/AuthCard';
+import { ROUTE } from '../../constants';
 
 export const FirstLoginPage = () => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export const FirstLoginPage = () => {
     }
 
     // Пароль задан — переходим на страницу входа
-    navigate('/login', { replace: true });
+    navigate(ROUTE.LOGIN, { replace: true });
   };
 
   return (

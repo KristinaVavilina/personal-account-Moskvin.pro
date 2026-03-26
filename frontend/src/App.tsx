@@ -4,12 +4,13 @@ import { DashboardTabsPage } from './pages/Dashboard/DashboardTabsPage';
 import { ProfilePage } from './pages/Dashboard/ProfilePage';
 import { LoginPage } from './pages/Login/LoginPage';
 import { FirstLoginPage } from './pages/Login/FirstLoginPage';
+import { ROUTE } from './constants';
 import { useUserStore } from './store/useUserStore';
 
-/** Редирект неаутентифицированных пользователей на /login */
+/** Редирект неаутентифицированных пользователей на страницу входа */
 const ProtectedRoute = () => {
   const isAuthenticated = useUserStore((s) => s.isAuthenticated);
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) return <Navigate to={ROUTE.LOGIN} replace />;
   return <Dashboard />;
 };
 
@@ -18,21 +19,21 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Первичная авторизация — доступна по ссылке-приглашению */}
-        <Route path="/first-login" element={<FirstLoginPage />} />
+        <Route path={ROUTE.FIRST_LOGIN} element={<FirstLoginPage />} />
 
         {/* Обычный вход */}
-        <Route path="/login" element={<LoginPage />} />
+        <Route path={ROUTE.LOGIN} element={<LoginPage />} />
 
         {/* Защищённые страницы кабинета */}
-        <Route path="/" element={<ProtectedRoute />}>
-          <Route index element={<Navigate to="/statistics" replace />} />
-          <Route path="statistics" element={<DashboardTabsPage />} />
-          <Route path="reporting"  element={<DashboardTabsPage />} />
-          <Route path="calendar"   element={<DashboardTabsPage />} />
-          <Route path="profile"    element={<ProfilePage />} />
+        <Route path={ROUTE.HOME} element={<ProtectedRoute />}>
+          <Route index element={<Navigate to={ROUTE.PROGRESS} replace />} />
+          <Route path={ROUTE.PROGRESS.slice(1)} element={<DashboardTabsPage />} />
+          <Route path={ROUTE.REPORTING.slice(1)} element={<DashboardTabsPage />} />
+          <Route path={ROUTE.CALENDAR.slice(1)} element={<DashboardTabsPage />} />
+          <Route path={ROUTE.PROFILE.slice(1)} element={<ProfilePage />} />
         </Route>
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to={ROUTE.LOGIN} replace />} />
       </Routes>
     </BrowserRouter>
   );

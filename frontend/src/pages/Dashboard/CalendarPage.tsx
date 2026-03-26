@@ -1,60 +1,44 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import dropdownArrowIcon from '../../assets/icons/dropdown-arrow-icon.svg';
+import {
+  MONTHS,
+  MONTH_INDEX,
+  DAY_NAMES,
+  CALENDAR_PLACEHOLDER,
+  GANTT_BAR_HEIGHT_REM,
+  GANTT_BAR_GAP_REM,
+  GANTT_MIN_DAY_COL_WIDTH_REM,
+} from '../../constants';
+import type { GanttTask } from '../../constants';
+import { buildGanttTasksFromMocks } from '../../mocks/calendarGanttFromMocks';
+import { getDaysInMonth } from '../../utils';
 
-const MONTHS = [
-  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
-];
-
-const MONTH_INDEX: Record<string, number> = Object.fromEntries(
-  MONTHS.map((m, i) => [m, i]),
-);
-
-const DAY_NAMES = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
-
-type TaskCategory = 'task' | 'discussion' | 'education' | 'routine' | 'other';
-
-interface GanttTask {
-  id: number;
-  name: string;
-  category: TaskCategory;
-  start: number;
-  end: number;
-  progress: number;
+interface CalendarPageProps {
+  onTaskSelect?: (task: GanttTask) => void;
+  selectedTaskId?: string | null;
 }
 
-const MOCK_TASKS: GanttTask[] = [
-  { id: 1, name: 'Разработка UI',         category: 'task',       start: 1,  end: 12, progress: 75 },
-  { id: 2, name: 'Совещание с командой',  category: 'discussion', start: 5,  end: 8,  progress: 100 },
-  { id: 3, name: 'Обучение React',        category: 'education',  start: 10, end: 22, progress: 40 },
-  { id: 4, name: 'Ежедневная рутина',     category: 'routine',    start: 1,  end: 31, progress: 60 },
-  { id: 5, name: 'Прочие задачи',         category: 'other',      start: 18, end: 28, progress: 20 },
-  { id: 6, name: 'Код-ревью',             category: 'task',       start: 14, end: 20, progress: 50 },
-  { id: 7, name: 'Планирование спринта',  category: 'discussion', start: 22, end: 25, progress: 30 },
-];
-
-const BAR_H     = 5.4; // rem — должно совпадать с CSS
-const BAR_GAP   = 1.2; // rem — должно совпадать с CSS
-const MIN_COL_W = 4;   // rem — минимальная ширина колонки дня
-
-function getDaysInMonth(monthIndex: number, year: number): number {
-  return new Date(year, monthIndex + 1, 0).getDate();
-}
-
-export const CalendarPage = () => {
-  const [selectedMonth, setSelectedMonth] = useState('Август');
+export const CalendarPage = ({ onTaskSelect, selectedTaskId }: CalendarPageProps) => {
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(
+    () => MONTHS[new Date().getMonth()],
+  );
   const [isOpen, setIsOpen] = useState(false);
 
   const year       = new Date().getFullYear();
-  const monthIndex = MONTH_INDEX[selectedMonth];
-  const totalDays  = getDaysInMonth(monthIndex, year);
+  const monthIndex = selectedMonth ? MONTH_INDEX[selectedMonth] : null;
+  const totalDays  = monthIndex !== null ? getDaysInMonth(monthIndex, year) : 0;
   const days       = Array.from({ length: totalDays }, (_, i) => i + 1);
 
   const today    = new Date();
   const todayDay =
-    today.getFullYear() === year && today.getMonth() === monthIndex
+    monthIndex !== null && today.getFullYear() === year && today.getMonth() === monthIndex
       ? today.getDate()
       : null;
+
+  const ganttTasks = useMemo(
+    () => (monthIndex === null ? [] : buildGanttTasksFromMocks(year, monthIndex)),
+    [year, monthIndex],
+  );
 
   return (
     <>
@@ -68,7 +52,7 @@ export const CalendarPage = () => {
           aria-label="Выбрать месяц"
           aria-expanded={isOpen}
         >
-          <span className="month-selector__label">{selectedMonth}</span>
+          <span className="month-selector__label">{selectedMonth ?? 'Выбрать'}</span>
           <img
             className="month-selector__icon"
             src={dropdownArrowIcon}
@@ -102,85 +86,102 @@ export const CalendarPage = () => {
       </div>
 
       <section className="calendar-widget" aria-label="Календарь">
-        <div className="gantt">
-          <div className="gantt__scroll">
-            <div
-              className="gantt__inner"
-              style={{
-                minWidth: `${totalDays * MIN_COL_W}rem`,
-                '--total-days': totalDays,
-              } as React.CSSProperties}
-            >
-              {/* Шапка: числа + дни недели */}
-              <div className="gantt__header">
-                <div className="gantt__days" aria-hidden="true">
-                  {days.map((d) => {
-                    const dayOfWeek = DAY_NAMES[new Date(year, monthIndex, d).getDay()];
-                    const isToday   = d === todayDay;
-                    const isWeekend = dayOfWeek === 'СБ' || dayOfWeek === 'ВС';
+        {monthIndex !== null ? (
+          <div className="gantt">
+            <div className="gantt__scroll">
+              <div
+                className="gantt__inner"
+                style={{
+                  minWidth: `${totalDays * GANTT_MIN_DAY_COL_WIDTH_REM}rem`,
+                  '--total-days': totalDays,
+                } as React.CSSProperties}
+              >
+                <div className="gantt__header">
+                  <div className="gantt__days" aria-hidden="true">
+                    {days.map((d) => {
+                      const dayOfWeek = DAY_NAMES[new Date(year, monthIndex, d).getDay()];
+                      const isToday   = d === todayDay;
+                      const isWeekend = dayOfWeek === 'СБ' || dayOfWeek === 'ВС';
+                      return (
+                        <div
+                          key={`day-${d}`}
+                          className={
+                            'gantt__day-col' +
+                            (isToday   ? ' gantt__day-col--today'   : '') +
+                            (isWeekend ? ' gantt__day-col--weekend' : '')
+                          }
+                        >
+                          <span className="gantt__day-num">{d}</span>
+                          <span className="gantt__day-name">{dayOfWeek}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div
+                  className="gantt__field"
+                  style={{
+                    minHeight: `${ganttTasks.length * GANTT_BAR_HEIGHT_REM + Math.max(0, ganttTasks.length - 1) * GANTT_BAR_GAP_REM}rem`,
+                  }}
+                >
+                  {todayDay !== null && (
+                    <div
+                      className="gantt__today-line"
+                      style={{ left: `${((todayDay - 0.5) / totalDays) * 100}%` }}
+                      aria-hidden="true"
+                    />
+                  )}
+
+                  {ganttTasks.map((task, index) => {
+                    const start = Math.max(1, task.start);
+                    const end   = Math.min(totalDays, task.end);
+                    if (start > totalDays || end < 1) return null;
+
+                    const left  = ((start - 1) / totalDays) * 100;
+                    const width = ((end - start + 1) / totalDays) * 100;
+                    const top   = index * (GANTT_BAR_HEIGHT_REM + GANTT_BAR_GAP_REM);
+
+                    const isSelected = selectedTaskId === task.id;
+
                     return (
                       <div
-                        key={`day-${d}`}
+                        key={`task-${task.id}`}
                         className={
-                          'gantt__day-col' +
-                          (isToday   ? ' gantt__day-col--today'   : '') +
-                          (isWeekend ? ' gantt__day-col--weekend' : '')
+                          `gantt__bar gantt__bar--${task.category}` +
+                          (isSelected ? ' gantt__bar--selected' : '')
                         }
+                        style={{ left: `${left}%`, width: `${width}%`, top: `${top}rem` }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`${task.name}: ${start}–${end} ${selectedMonth}, ${task.progress}%`}
+                        onClick={() => onTaskSelect?.(task)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onTaskSelect?.(task);
+                          }
+                        }}
                       >
-                        <span className="gantt__day-num">{d}</span>
-                        <span className="gantt__day-name">{dayOfWeek}</span>
+                        <div
+                          className="gantt__bar-fill"
+                          style={{ width: `${task.progress}%` }}
+                          aria-hidden="true"
+                        />
+                        <span className="gantt__bar-name">{task.name}</span>
+                        <span className="gantt__bar-progress">{task.progress}%</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
-
-              {/* Поле: все задачи на одном слое */}
-              <div
-                className="gantt__field"
-                style={{
-                  minHeight: `${MOCK_TASKS.length * BAR_H + (MOCK_TASKS.length - 1) * BAR_GAP}rem`,
-                }}
-              >
-                {todayDay !== null && (
-                  <div
-                    className="gantt__today-line"
-                    style={{ left: `${((todayDay - 0.5) / totalDays) * 100}%` }}
-                    aria-hidden="true"
-                  />
-                )}
-
-                {MOCK_TASKS.map((task, index) => {
-                  const start = Math.max(1, task.start);
-                  const end   = Math.min(totalDays, task.end);
-                  if (start > totalDays || end < 1) return null;
-
-                  const left  = ((start - 1) / totalDays) * 100;
-                  const width = ((end - start + 1) / totalDays) * 100;
-                  const top   = index * (BAR_H + BAR_GAP);
-
-                  return (
-                    <div
-                      key={`task-${task.id}`}
-                      className={`gantt__bar gantt__bar--${task.category}`}
-                      style={{ left: `${left}%`, width: `${width}%`, top: `${top}rem` }}
-                      role="img"
-                      aria-label={`${task.name}: ${start}–${end} ${selectedMonth}, ${task.progress}%`}
-                    >
-                      <div
-                        className="gantt__bar-fill"
-                        style={{ width: `${task.progress}%` }}
-                        aria-hidden="true"
-                      />
-                      <span className="gantt__bar-name">{task.name}</span>
-                      <span className="gantt__bar-progress">{task.progress}%</span>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="calendar-widget__placeholder">
+            {CALENDAR_PLACEHOLDER}
+          </div>
+        )}
       </section>
     </>
   );

@@ -4,13 +4,13 @@ import progressIcon from '../../assets/icons/progress-icon.svg';
 import knowledgeBaseIcon from '../../assets/icons/knowlege-base-icon.svg';
 import employeesIcon from '../../assets/icons/employees-icon.svg';
 import profileIcon from '../../assets/icons/profile-icon.svg';
+import { ROUTE } from '../../constants';
+import { isDashboardPath } from '../../utils';
 import './Sidebar.scss';
-
-const DASHBOARD_PATHS = ['/statistics', '/reporting', '/calendar'];
 
 export const Sidebar = () => {
   const { pathname } = useLocation();
-  const isDashboardActive = DASHBOARD_PATHS.some((p) => pathname.startsWith(p));
+  const isDashboardActive = isDashboardPath(pathname);
 
   return (
     <aside className="sidebar">
@@ -26,7 +26,7 @@ export const Sidebar = () => {
 
       <nav className="sidebar__menu" aria-label="Боковое меню">
         <NavLink
-          to="/statistics"
+          to={ROUTE.PROGRESS}
           className={'sidebar__item' + (isDashboardActive ? ' sidebar__item--active' : '')}
           aria-label="Прогресс"
         >
@@ -49,7 +49,7 @@ export const Sidebar = () => {
       </nav>
 
       <NavLink
-        to="/profile"
+        to={ROUTE.PROFILE}
         className={({ isActive }) =>
           'sidebar__profile sidebar__item' + (isActive ? ' sidebar__item--active' : '')
         }

@@ -350,4 +350,14 @@
   &:active {
     box-shadow: var(--shadow-inner);
   }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: var(--shadow-sm);
+
+    &:hover {
+      box-shadow: var(--shadow-sm);
+    }
+  }
 }

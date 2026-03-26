@@ -1,20 +1,18 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { DEFAULT_PROFILE_AVATAR_URL, ROUTE } from '../../constants';
 import { useUserStore } from '../../store/useUserStore';
 import './Profile.scss';
-
-const DEFAULT_AVATAR =
-  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=256&h=256&q=60';
 
 export const ProfilePage = () => {
   const navigate = useNavigate();
   const logout = useUserStore((s) => s.logout);
-  const [avatarSrc, setAvatarSrc] = useState(DEFAULT_AVATAR);
+  const [avatarSrc, setAvatarSrc] = useState(DEFAULT_PROFILE_AVATAR_URL);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogout = () => {
     logout();
-    navigate('/login', { replace: true });
+    navigate(ROUTE.LOGIN, { replace: true });
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {

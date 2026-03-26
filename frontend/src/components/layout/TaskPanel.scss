@@ -113,6 +113,13 @@
 }
 
 .task-item {
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-light, #64748b);
+    outline-offset: 2px;
+  }
+
   width: 100%;
   height: 9.8rem;
   background: var(--surface-inset);
@@ -276,41 +283,3 @@
   }
 }
 
-.alert-message {
-  width: 100%;
-  height: 10rem;
-  background: var(--surface-inset);
-  border-radius: 2rem;
-  box-shadow: var(--shadow-danger);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 2rem;
-  flex-shrink: 0;
-  cursor: pointer;
-  transition: box-shadow 0.2s ease;
-
-  &:hover {
-    box-shadow: -1rem -1rem 2rem 0 #ffffff, 1rem 1rem 2rem 0 rgba(250, 138, 138, 0.8);
-  }
-
-  &:active {
-    box-shadow: inset -0.5rem -0.5rem 1rem 0 #ffffff,
-      inset 0.5rem 0.5rem 1rem 0 rgba(250, 138, 138, 0.5);
-  }
-}
-
-.alert-message__text {
-  font-size: 2rem;
-  font-weight: 600;
-  color: var(--danger);
-  flex: 1;
-  line-height: 1.3;
-}
-
-.alert-message__icon {
-  width: 4.3rem;
-  height: 4.6rem;
-  object-fit: contain;
-  flex-shrink: 0;
-}

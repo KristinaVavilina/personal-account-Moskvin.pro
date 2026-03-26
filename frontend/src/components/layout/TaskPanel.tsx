@@ -1,52 +1,79 @@
-import { useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import taskTypeIcon from '../../assets/icons/task-type-icon.svg';
-import alertBellIcon from '../../assets/icons/alert-bell-icon.svg';
+import { getActiveTaskListFromMocks } from '../../mocks/taskListFromMockTask';
 import { AddTaskModal } from './AddTaskModal';
+import { EditTaskModal } from './EditTaskModal';
+import { ArchiveModal } from './ArchiveModal';
+import { ReportModal } from './ReportModal';
+import { AlertMessage } from './AlertMessage';
+import {
+  type AlertState,
+  TASK_PANEL_ACTION_ARCHIVE,
+  TASK_PANEL_ACTION_REPORT,
+} from '../../constants';
+import type { TaskListItem } from './taskListTypes';
+import { createInitialTaskPanelState, taskPanelTasksReducer } from './taskPanelReducer';
 import './TaskPanel.scss';
 
-interface Task {
-  id: number;
-  name: string;
-  progress: number;
-}
+export type { ArchivedTaskRecord, TaskListItem } from './taskListTypes';
+
 
 interface TaskPanelProps {
-  tasks?: Task[];
+  tasks?: TaskListItem[];
   isLoading?: boolean;
   actionButtonLabel?: string;
   onActionButtonClick?: () => void;
+  debugAlertState?: AlertState | null;
 }
 
-const defaultTasks: Task[] = [
-];
-
-// const defaultTasks: Task[] = [
-//   { id: 1, name: 'Выполнить монтаж ролика', progress: 70 },
-//   { id: 2, name: 'Выполнить монтаж ролика', progress: 40 },
-//   { id: 3, name: 'Выполнить монтаж ролика', progress: 20 },
-//   { id: 4, name: 'Выполнить монтаж ролика', progress: 90 },
-//   { id: 5, name: 'Выполнить монтаж ролика', progress: 90 },
-//   { id: 6, name: 'Выполнить монтаж ролика', progress: 90 },
-//   { id: 7, name: 'Выполнить монтаж ролика', progress: 90 },
-//   { id: 8, name: 'Выполнить монтаж ролика', progress: 90 },
-//   { id: 9, name: 'Выполнить монтаж ролика', progress: 90 },
-//   { id: 10, name: 'Выполнить монтаж ролика', progress: 90 },
-//   { id: 11, name: 'Выполнить монтаж ролика', progress: 90 },
-//   { id: 12, name: 'Выполнить монтаж ролика', progress: 90 },
-//   { id: 13, name: 'Выполнить монтаж ролика', progress: 90 },
-//   { id: 14, name: 'Выполнить монтаж ролика', progress: 90 },
-//   { id: 15, name: 'Выполнить монтаж ролика', progress: 90 },
-//   { id: 16, name: 'Выполнить монтаж ролика', progress: 90 },
-//   { id: 17, name: 'Выполнить монтаж ролика', progress: 90 },  
-// ];
+const defaultTasks: TaskListItem[] = getActiveTaskListFromMocks();
 
 export const TaskPanel = ({
   tasks = defaultTasks,
-  isLoading = true,
-  actionButtonLabel = 'Архив заданий',
+  isLoading = false,
+  actionButtonLabel = TASK_PANEL_ACTION_ARCHIVE,
   onActionButtonClick,
+  debugAlertState = null,
 }: TaskPanelProps) => {
+  const [panel, dispatch] = useReducer(
+    taskPanelTasksReducer,
+    tasks,
+    createInitialTaskPanelState,
+  );
+  const { taskList, archivedList } = panel;
+
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<TaskListItem | null>(null);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
+
+  useEffect(() => {
+    dispatch({ type: 'SYNC_TASKS', tasks });
+  }, [tasks]);
+
+  const archiveModalRows = archivedList.map((a) => ({
+    id: a.task.id,
+    name: a.task.name,
+    daysLeft: a.daysLeft,
+  }));
+
+  const handleDeleteTask = (id: string) => {
+    dispatch({ type: 'DELETE_TO_ARCHIVE', id });
+  };
+
+  const handleRestoreTask = (id: string) => {
+    dispatch({ type: 'RESTORE_FROM_ARCHIVE', id });
+  };
+
+  const handleActionClick = () => {
+    if (onActionButtonClick) {
+      onActionButtonClick();
+    } else if (actionButtonLabel === TASK_PANEL_ACTION_REPORT) {
+      setIsReportOpen(true);
+    } else {
+      setIsArchiveOpen(true);
+    }
+  };
 
   return (
     <div className="task-panel">
@@ -58,19 +85,31 @@ export const TaskPanel = ({
 
         <div className="task-list-wrapper">
           <div className="task-list-viewport">
-            {!isLoading && tasks.length === 0 && (
+            {!isLoading && taskList.length === 0 && (
               <div className="task-list-empty">
                 <span className="task-list-empty__icon">📭</span>
                 <span>Список заданий пуст</span>
               </div>
             )}
-            {!isLoading && tasks.length > 0 && (
+            {!isLoading && taskList.length > 0 && (
               <ul className="task-list">
-                {tasks.map((task) => (
-                  <li key={task.id} className="task-item">
+                {taskList.map((task) => (
+                  <li
+                    key={task.id}
+                    className="task-item"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setEditingTask(task)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setEditingTask(task);
+                      }
+                    }}
+                  >
                     <div className="task-item__icon-wrapper">
                       <div className="task-item__icon">
-                        <img src={taskTypeIcon} alt="Task Type" />
+                        <img src={taskTypeIcon} alt="" />
                       </div>
                     </div>
                     <div className="task-item__content">
@@ -95,18 +134,34 @@ export const TaskPanel = ({
         </button>
       </div>
 
-      <button className="btn task-panel__action-btn" onClick={onActionButtonClick}>
+      <button className="btn task-panel__action-btn" onClick={handleActionClick}>
         {actionButtonLabel}
       </button>
 
-      {isModalOpen && <AddTaskModal onClose={() => setIsModalOpen(false)} />}
+      {isModalOpen && (
+        <AddTaskModal
+          onClose={() => setIsModalOpen(false)}
+          onAdd={(task) => dispatch({ type: 'ADD_TASK', task })}
+        />
+      )}
+      {editingTask && (
+        <EditTaskModal
+          task={editingTask}
+          onClose={() => setEditingTask(null)}
+          onSave={(updated) => dispatch({ type: 'UPDATE_TASK', task: updated })}
+          onDelete={handleDeleteTask}
+        />
+      )}
+      {isArchiveOpen && (
+        <ArchiveModal
+          onClose={() => setIsArchiveOpen(false)}
+          tasks={archiveModalRows}
+          onRestore={handleRestoreTask}
+        />
+      )}
+      {isReportOpen && <ReportModal onClose={() => setIsReportOpen(false)} />}
 
-      <div className="alert-message">
-        <p className="alert-message__text">
-          Необходимо заполнить ежедневную отчётность загруженности и пользы
-        </p>
-        <img className="alert-message__icon" src={alertBellIcon} alt="Уведомление" />
-      </div>
+      <AlertMessage debugState={debugAlertState} />
     </div>
   );
 };

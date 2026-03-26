@@ -35,6 +35,32 @@ html {
 }
 
 // =====================================================
+//  Recharts: тултип — фон как у страницы (--surface-inset)
+//  (классы позиции: recharts-tooltip-wrapper-left/right/top/bottom)
+// =====================================================
+.recharts-tooltip-wrapper {
+  background: var(--surface-inset);
+  border-radius: 1rem;
+  color: var(--accent-dark);
+  box-shadow: var(--shadow-sm);
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+.recharts-tooltip-wrapper .recharts-tooltip-label {
+  color: var(--accent-dark);
+}
+
+/* Название типа задания / категории (не цвет сектора) */
+.recharts-tooltip-wrapper .recharts-tooltip-item-name,
+.recharts-tooltip-wrapper .recharts-tooltip-item-separator {
+  color: var(--accent-dark) !important;
+}
+
+// =====================================================
 //  Сброс стилей
 // =====================================================
 *,

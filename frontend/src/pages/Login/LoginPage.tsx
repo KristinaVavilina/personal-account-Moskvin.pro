@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MOCK_LOGIN_CREDENTIALS, ROUTE } from '../../constants';
 import { useUserStore } from '../../store/useUserStore';
 import { AuthCard } from '../../components/layout/AuthCard';
-
-// Тестовые учётные данные (заменить на запрос к API)
-const CREDENTIALS = { email: '123', password: '123' };
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -17,9 +15,9 @@ export const LoginPage = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (email === CREDENTIALS.email && password === CREDENTIALS.password) {
+    if (email === MOCK_LOGIN_CREDENTIALS.email && password === MOCK_LOGIN_CREDENTIALS.password) {
       login('Иван', 'Разработчик');
-      navigate('/statistics', { replace: true });
+      navigate(ROUTE.PROGRESS, { replace: true });
     } else {
       setError(true);
     }
