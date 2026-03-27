@@ -8,7 +8,7 @@ namespace Infrastructure.Repositories.KnowledgeBase;
 public class QuickLinkRepository(AppDbContext context)
     : BaseRepository<QuickLink, Guid>(context), IQuickLinkRepository
 {
-    public async Task<IEnumerable<QuickLink>> GetQuickLinksByUserId(Guid userId)
+    public async Task<IEnumerable<QuickLink>> GetQuickLinksByUserIdAsync(Guid userId)
     {
         return await _dbSet
             .Where(x => x.UserId == userId || x.UserId == null)

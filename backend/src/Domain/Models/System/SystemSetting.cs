@@ -5,7 +5,7 @@ namespace Domain.Models.System;
 public class SystemSetting
 {
     [Key]
-    public required string Key { get; set; }
+    public required string Id { get; set; }
 
     public string? Value { get; set; }
 
