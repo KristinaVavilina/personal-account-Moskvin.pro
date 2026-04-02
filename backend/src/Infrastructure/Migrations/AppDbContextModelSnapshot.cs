@@ -17,7 +17,7 @@ namespace Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.3")
+                .HasAnnotation("ProductVersion", "10.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -103,9 +103,9 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Models.System.SystemSetting", b =>
                 {
-                    b.Property<string>("Key")
+                    b.Property<string>("Id")
                         .HasColumnType("text")
-                        .HasColumnName("key");
+                        .HasColumnName("id");
 
                     b.Property<string>("Description")
                         .HasColumnType("text")
@@ -115,10 +115,42 @@ namespace Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("value");
 
-                    b.HasKey("Key")
+                    b.HasKey("Id")
                         .HasName("pk_system_settings");
 
                     b.ToTable("system_settings", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Models.TimeLogs.DailyReflection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<int>("StressLevel")
+                        .HasColumnType("integer")
+                        .HasColumnName("stress_level");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<int>("ValueLevel")
+                        .HasColumnType("integer")
+                        .HasColumnName("value_level");
+
+                    b.HasKey("Id")
+                        .HasName("pk_daily_reflections");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_daily_reflections_user_id");
+
+                    b.ToTable("daily_reflections", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Models.TimeLogs.Task", b =>
@@ -243,11 +275,18 @@ namespace Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("task_id");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
                     b.HasKey("Id")
                         .HasName("pk_time_logs");
 
                     b.HasIndex("TaskId")
                         .HasDatabaseName("ix_time_logs_task_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_time_logs_user_id");
 
                     b.ToTable("time_logs", (string)null);
                 });
@@ -300,6 +339,12 @@ namespace Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("full_name");
 
+                    b.Property<bool>("IsArchived")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_archived");
+
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
@@ -315,12 +360,6 @@ namespace Infrastructure.Migrations
                     b.Property<int>("Role")
                         .HasColumnType("integer")
                         .HasColumnName("role");
-
-                    b.Property<int>("Status")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0)
-                        .HasColumnName("status");
 
                     b.HasKey("Id")
                         .HasName("pk_users");
@@ -364,6 +403,18 @@ namespace Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Domain.Models.TimeLogs.DailyReflection", b =>
+                {
+                    b.HasOne("Domain.Models.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_daily_reflections_users_user_id");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Domain.Models.TimeLogs.Task", b =>
                 {
                     b.HasOne("Domain.Models.TimeLogs.TaskType", "Type")
@@ -394,7 +445,16 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_time_logs_tasks_task_id");
 
+                    b.HasOne("Domain.Models.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_time_logs_users_user_id");
+
                     b.Navigation("Task");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Domain.Models.Users.User", b =>

@@ -3,6 +3,7 @@ using Domain.Models.Users;
 using Domain.Models.System;
 using Domain.Models.TimeLogs;
 using Microsoft.EntityFrameworkCore;
+using Domain.Enums;
 
 namespace Infrastructure.Data;
 
@@ -11,6 +12,8 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; }
 
     public DbSet<Position> Positions { get; set; }
+
+    public DbSet<DailyReflection> DailyReflections { get; set; }
 
     public DbSet<TaskType> TaskTypes { get; set; }
 
@@ -44,7 +47,7 @@ public class AppDbContext : DbContext
         {
             entity.Property(t => t.Id).HasDefaultValueSql("gen_random_uuid()");
             entity.Property(t => t.CreatedAt).HasDefaultValueSql("now()");
-            entity.Property(t => t.CurrentProgress).HasDefaultValue(0);
+            entity.Property(t => t.CurrentProgress).HasDefaultValue(TaskProgress.NotStarted);
             entity.Property(t => t.IsArchived).HasDefaultValue(false);
         });
 
