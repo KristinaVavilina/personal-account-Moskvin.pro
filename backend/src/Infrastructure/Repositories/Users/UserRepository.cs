@@ -14,4 +14,14 @@ public class UserRepository(AppDbContext context)
             .Where(x => x.IsArchived == isArchived)
             .ToListAsync();
     }
+
+    public async Task<User?> GetByEmailAsync(string email)
+    {
+        return await _dbSet.FirstOrDefaultAsync(x => x.Email == email);
+    }
+
+    public async Task<User?> GetByTokenHashAsync(string tokenHash)
+    {
+        return await _dbSet.FirstOrDefaultAsync(x => x.InviteTokenHash == tokenHash);
+    }
 }

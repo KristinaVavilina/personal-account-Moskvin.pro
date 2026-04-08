@@ -8,8 +8,6 @@ public class UserResponse
 
     public required string Email { get; set; }
 
-    public string? PasswordHash { get; set; }
-
     public required string FullName { get; set; }
 
     public string? PhotoUrl { get; set; }

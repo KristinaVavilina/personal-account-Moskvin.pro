@@ -29,4 +29,8 @@ public class User
     public DateTime CreatedAt { get; set; }
 
     public DateTime? DeletedAt { get; set; }
+
+    public string? InviteTokenHash { get; set; }
+
+    public DateTime? InviteTokenExpiration { get; set; }
 }
