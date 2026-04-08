@@ -21,6 +21,8 @@ export type { ArchivedTaskRecord, TaskListItem } from './taskListTypes';
 interface TaskPanelProps {
   tasks?: TaskListItem[];
   isLoading?: boolean;
+  /** Не подмешивать демо-архив из моков (данные с API). */
+  initialArchivedEmpty?: boolean;
   actionButtonLabel?: string;
   onActionButtonClick?: () => void;
   debugAlertState?: AlertState | null;
@@ -31,14 +33,15 @@ const defaultTasks: TaskListItem[] = getActiveTaskListFromMocks();
 export const TaskPanel = ({
   tasks = defaultTasks,
   isLoading = false,
+  initialArchivedEmpty = false,
   actionButtonLabel = TASK_PANEL_ACTION_ARCHIVE,
   onActionButtonClick,
   debugAlertState = null,
 }: TaskPanelProps) => {
   const [panel, dispatch] = useReducer(
     taskPanelTasksReducer,
-    tasks,
-    createInitialTaskPanelState,
+    { tasks, emptyArchive: initialArchivedEmpty },
+    (init) => createInitialTaskPanelState(init.tasks, { emptyArchive: init.emptyArchive }),
   );
   const { taskList, archivedList } = panel;
 

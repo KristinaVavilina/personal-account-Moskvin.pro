@@ -25,11 +25,16 @@ export function normalizeTaskListItem(t: TaskListItem): TaskListItem {
   };
 }
 
-export function createInitialTaskPanelState(tasks: TaskListItem[]): TaskPanelTasksState {
+export function createInitialTaskPanelState(
+  tasks: TaskListItem[],
+  options?: { emptyArchive?: boolean },
+): TaskPanelTasksState {
   const taskList = tasks.map(normalizeTaskListItem);
   return {
     taskList,
-    archivedList: initialArchivedTaskRecords(taskList.length),
+    archivedList: options?.emptyArchive
+      ? []
+      : initialArchivedTaskRecords(taskList.length),
   };
 }
 

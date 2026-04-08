@@ -3,7 +3,8 @@ import alertBellIcon from '../../assets/icons/alert-bell-icon.svg';
 import alertBellIconGray from '../../assets/icons/alert-bell-icon-gray.svg';
 import { StatusReportModal } from './StatusReportModal';
 import { type AlertState, RESET_HOUR } from '../../constants';
-import { getTimeUntilDeadline, computeAutoState } from '../../utils';
+import { getTimeUntilDeadline, computeAutoState, parseStatusReportScaleToChart } from '../../utils';
+import { useBenefitWorkloadLocalStore } from '../../store/useBenefitWorkloadLocalStore';
 import './AlertMessage.scss';
 
 interface AlertMessageProps {
@@ -46,7 +47,15 @@ export const AlertMessage = ({ debugState = null }: AlertMessageProps) => {
     }
   };
 
-  const handleReportSave = () => {
+  const handleReportSave = (data: { benefit: string; workload: string }) => {
+    const now = new Date();
+    useBenefitWorkloadLocalStore.getState().setTodayChartPoint({
+      year: now.getFullYear(),
+      monthIndex: now.getMonth(),
+      day: now.getDate(),
+      benefit: parseStatusReportScaleToChart(data.benefit),
+      workload: parseStatusReportScaleToChart(data.workload),
+    });
     setIsModalOpen(false);
     setReportFilled(true);
   };

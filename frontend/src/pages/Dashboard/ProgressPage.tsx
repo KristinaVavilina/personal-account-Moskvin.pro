@@ -1,7 +1,10 @@
-import { useMemo } from 'react';
-import { createMockBenefitWorkloadForMonth } from '../../mocks/benefitWorkloadMock';
+import { useEffect, useMemo, useState } from 'react';
+import { fetchBenefitWorkloadForMonth } from '../../api/dailyReflections';
+import { fetchCompletedTasksCountForMonth } from '../../api/tasks';
+import { useBenefitWorkloadLocalStore } from '../../store/useBenefitWorkloadLocalStore';
+import type { BenefitWorkloadPoint } from '../../mocks/benefitWorkloadMock';
+import { mergeBenefitWorkloadWithLocalOverride } from '../../utils/benefitWorkloadMerge';
 import { mockDayTimelineSegments } from '../../mocks/dayTimelineMock';
-import { mockCompletedTasksThisMonth } from '../../mocks/monthStatsMock';
 import { mockWeekBalance } from '../../mocks/weekBalanceMock';
 import { pluralRuTasks } from '../../utils';
 import { BenefitWorkloadChart } from './BenefitWorkloadChart';
@@ -11,17 +14,75 @@ import './Progress.scss';
 
 const isTimelineLoading = false;
 
-const statsData: number | null = mockCompletedTasksThisMonth;
-const isStatsLoading = false;
-
-const isChartLoading = false;
-
 const isBalanceLoading = false;
 
 export const ProgressPage = () => {
-  const benefitWorkloadData = useMemo(() => {
+  const [benefitWorkloadData, setBenefitWorkloadData] = useState<BenefitWorkloadPoint[]>([]);
+  const [isChartLoading, setIsChartLoading] = useState(true);
+  const [chartError, setChartError] = useState<string | null>(null);
+  const [statsCount, setStatsCount] = useState<number | null>(null);
+  const [isStatsLoading, setIsStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
+  const todayOverride = useBenefitWorkloadLocalStore((s) => s.todayOverride);
+
+  const chartDisplayData = useMemo(() => {
     const d = new Date();
-    return createMockBenefitWorkloadForMonth(d.getFullYear(), d.getMonth());
+    return mergeBenefitWorkloadWithLocalOverride(
+      benefitWorkloadData,
+      d.getFullYear(),
+      d.getMonth(),
+      todayOverride,
+    );
+  }, [benefitWorkloadData, todayOverride]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const d = new Date();
+    const year = d.getFullYear();
+    const monthIndex = d.getMonth();
+    (async () => {
+      setIsChartLoading(true);
+      setChartError(null);
+      try {
+        const data = await fetchBenefitWorkloadForMonth(year, monthIndex);
+        if (!cancelled) setBenefitWorkloadData(data);
+      } catch (e) {
+        if (!cancelled) {
+          setChartError(e instanceof Error ? e.message : 'Не удалось загрузить график');
+          setBenefitWorkloadData([]);
+        }
+      } finally {
+        if (!cancelled) setIsChartLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const d = new Date();
+    const year = d.getFullYear();
+    const monthIndex = d.getMonth();
+    (async () => {
+      setIsStatsLoading(true);
+      setStatsError(null);
+      try {
+        const n = await fetchCompletedTasksCountForMonth(year, monthIndex);
+        if (!cancelled) setStatsCount(n);
+      } catch (e) {
+        if (!cancelled) {
+          setStatsError(e instanceof Error ? e.message : 'Не удалось загрузить статистику');
+          setStatsCount(null);
+        }
+      } finally {
+        if (!cancelled) setIsStatsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const statsMonthLabel = useMemo(() => {
@@ -79,26 +140,31 @@ export const ProgressPage = () => {
           <div className="widget__spinner" aria-label="Загрузка" />
         )}
         <p className="widget__title">В этом месяце выполнено заданий</p>
+        {statsError && (
+          <p className="widget__api-error" role="alert">
+            {statsError}
+          </p>
+        )}
         <div className="widget__content">
-          {!isStatsLoading && statsData === null && (
+          {!isStatsLoading && statsError && (
             <div className="widget__content-empty">
               <span className="widget__content-empty-icon">📭</span>
               <span>Нет данных за этот месяц</span>
             </div>
           )}
-          {!isStatsLoading && statsData !== null && (
+          {!isStatsLoading && !statsError && statsCount !== null && (
             <div
               className="stats-chart"
               role="img"
-              aria-label={`${statsData} ${pluralRuTasks(statsData)} за ${statsMonthLabel}`}
+              aria-label={`${statsCount} ${pluralRuTasks(statsCount)} за ${statsMonthLabel}`}
             >
               <div className="stats-chart__disc" aria-hidden="true">
-                <span className="stats-chart__value">{statsData}</span>
+                <span className="stats-chart__value">{statsCount}</span>
               </div>
             </div>
           )}
         </div>
-        {!isStatsLoading && statsData !== null && (
+        {!isStatsLoading && !statsError && statsCount !== null && (
           <p className="widget-stats__month">{statsMonthLabel}</p>
         )}
       </div>
@@ -108,18 +174,23 @@ export const ProgressPage = () => {
           <div className="widget__spinner" aria-label="Загрузка" />
         )}
         <p className="widget__title">График пользы и загруженности</p>
+        {chartError && (
+          <p className="widget__api-error" role="alert">
+            {chartError}
+          </p>
+        )}
         <div className="widget__content">
-          {!isChartLoading && benefitWorkloadData.length === 0 && (
+          {!isChartLoading && chartDisplayData.length === 0 && (
             <div className="widget__content-empty">
               <span className="widget__content-empty-icon">📭</span>
               <span>Нет данных для отображения</span>
             </div>
           )}
-          {!isChartLoading && benefitWorkloadData.length > 0 && (
-            <BenefitWorkloadChart data={benefitWorkloadData} />
+          {!isChartLoading && chartDisplayData.length > 0 && (
+            <BenefitWorkloadChart data={chartDisplayData} />
           )}
         </div>
-        {!isChartLoading && benefitWorkloadData.length > 0 && (
+        {!isChartLoading && chartDisplayData.length > 0 && (
           <div className="legend-list">
             <div className="legend-item">
               <span className="legend-item__marker legend-item__marker--discussion" />

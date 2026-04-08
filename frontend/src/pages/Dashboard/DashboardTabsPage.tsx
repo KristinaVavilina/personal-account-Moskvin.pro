@@ -1,7 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { fetchActiveTasksForDashboard } from '../../api/tasks';
 import { PageTabs } from '../../components/layout/PageTabs';
 import { TaskPanel } from '../../components/layout/TaskPanel';
+import type { TaskListItem } from '../../components/layout/taskListTypes';
 import type { GanttTask } from '../../constants';
 import {
   DEBUG_DASHBOARD_ALERT_STATE,
@@ -20,6 +22,30 @@ export const DashboardTabsPage = () => {
   const { pathname } = useLocation();
   const [activeTab, setActiveTab] = useState<Tab>(() => getInitialTab(pathname));
   const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
+  const [taskWidgetItems, setTaskWidgetItems] = useState<TaskListItem[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
+  const [tasksError, setTasksError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setTasksLoading(true);
+      setTasksError(null);
+      try {
+        const list = await fetchActiveTasksForDashboard();
+        if (!cancelled) setTaskWidgetItems(list);
+      } catch (e) {
+        if (!cancelled) {
+          setTasksError(e instanceof Error ? e.message : 'Не удалось загрузить задания');
+        }
+      } finally {
+        if (!cancelled) setTasksLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleTaskSelect = useCallback((task: GanttTask) => {
     setSelectedTask(task);
@@ -70,12 +96,22 @@ export const DashboardTabsPage = () => {
           )}
         </aside>
       ) : (
-        <TaskPanel
-          actionButtonLabel={
-            activeTab === 'reporting' ? TASK_PANEL_ACTION_REPORT : TASK_PANEL_ACTION_ARCHIVE
-          }
-          debugAlertState={DEBUG_DASHBOARD_ALERT_STATE}
-        />
+        <>
+          {tasksError && (
+            <aside className="task-panel-api-error" role="alert">
+              {tasksError}
+            </aside>
+          )}
+          <TaskPanel
+            tasks={taskWidgetItems}
+            isLoading={tasksLoading}
+            initialArchivedEmpty
+            actionButtonLabel={
+              activeTab === 'reporting' ? TASK_PANEL_ACTION_REPORT : TASK_PANEL_ACTION_ARCHIVE
+            }
+            debugAlertState={DEBUG_DASHBOARD_ALERT_STATE}
+          />
+        </>
       )}
     </>
   );

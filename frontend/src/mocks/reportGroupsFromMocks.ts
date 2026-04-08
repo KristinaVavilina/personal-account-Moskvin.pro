@@ -38,9 +38,55 @@ function formatReportDate(iso: string): string {
   return `${d} ${monthLabel} ${y}`;
 }
 
+function formatTimePart(t: string): string {
+  const s = t.trim();
+  if (s.includes('T')) {
+    const part = s.split('T')[1]?.slice(0, 5);
+    return part && part.length >= 5 ? part : '00:00';
+  }
+  return s.slice(0, 5);
+}
+
 function formatTimeRange(start: string, end: string): string {
-  const hhmm = (t: string) => t.slice(0, 5);
-  return `${hhmm(start)} - ${hhmm(end)}`;
+  return `${formatTimePart(start)} - ${formatTimePart(end)}`;
+}
+
+/** Ответ API TimeLog (camelCase). */
+export interface ApiTimeLogRow {
+  id: string;
+  taskId: string;
+  userId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  progressSnapshot?: number | null;
+  comment?: string | null;
+}
+
+/** Группы по дате из таймлогов API; заголовок — id задачи (временно). */
+export function buildReportGroupsFromApiLogs(logs: ApiTimeLogRow[]): ReportWidgetGroup[] {
+  const byDate = new Map<string, ApiTimeLogRow[]>();
+  for (const log of logs) {
+    const key = log.date.slice(0, 10);
+    const list = byDate.get(key) ?? [];
+    list.push(log);
+    byDate.set(key, list);
+  }
+  const dates = [...byDate.keys()].sort((a, b) => b.localeCompare(a));
+  return dates.map((date) => ({
+    id: date,
+    date: formatReportDate(date),
+    items: (byDate.get(date) ?? []).map((log) => {
+      const progress = log.progressSnapshot ?? 0;
+      return {
+        id: log.id,
+        title: log.taskId,
+        text: log.comment?.trim() ? log.comment.trim() : 'Комментарий не указан.',
+        badge: `Выполнено: ${progress}%`,
+        time: formatTimeRange(log.startTime, log.endTime),
+      };
+    }),
+  }));
 }
 
 /** Группы по дате (сначала более новые дни), элементы — записи учёта времени из моков */

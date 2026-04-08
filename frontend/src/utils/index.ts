@@ -19,6 +19,8 @@ export {
   computeBenefitLineStrokePx,
 } from './benefitWorkloadStroke';
 
+export { parseStatusReportScaleToChart } from './benefitWorkloadRatings';
+
 // ─── Модальные окна ──────────────────────────────────────────────────────────
 
 export function handleOverlayClick(

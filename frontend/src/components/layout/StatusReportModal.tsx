@@ -2,12 +2,12 @@ import { useState } from 'react';
 import closeIcon from '../../assets/icons/close-icon.svg';
 import dropdownArrowIcon from '../../assets/icons/dropdown-arrow-icon.svg';
 import { handleOverlayClick } from '../../utils';
-import { BENEFIT_RATINGS, WORKLOAD_RATINGS } from '../../constants';
+import { STATUS_REPORT_SCALE_VALUES } from '../../constants';
 import './StatusReportModal.scss';
 
 interface StatusReportModalProps {
   onClose: () => void;
-  onSave?: () => void;
+  onSave?: (data: { benefit: string; workload: string }) => void;
 }
 
 type Dropdown = 'benefit' | 'workload' | null;
@@ -58,18 +58,22 @@ export const StatusReportModal = ({ onClose, onSave }: StatusReportModalProps) =
               </button>
 
               {openDropdown === 'benefit' && (
-                <div className="type-selector__menu" role="listbox" aria-label="Оценка пользы">
-                  {BENEFIT_RATINGS.map((value) => (
-                    <button
-                      key={value}
-                      className={'type-selector__option' + (value === benefit ? ' type-selector__option--active' : '')}
-                      role="option"
-                      aria-selected={value === benefit}
-                      onClick={() => { setBenefit(value); setOpenDropdown(null); }}
-                    >
-                      {value}
-                    </button>
-                  ))}
+                <div className="type-selector__menu" role="listbox" aria-label="Оценка пользы по шкале от 1 до 5">
+                  {STATUS_REPORT_SCALE_VALUES.map((n) => {
+                    const value = String(n);
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        className={'type-selector__option' + (value === benefit ? ' type-selector__option--active' : '')}
+                        role="option"
+                        aria-selected={value === benefit}
+                        onClick={() => { setBenefit(value); setOpenDropdown(null); }}
+                      >
+                        {value}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -95,25 +99,38 @@ export const StatusReportModal = ({ onClose, onSave }: StatusReportModalProps) =
               </button>
 
               {openDropdown === 'workload' && (
-                <div className="type-selector__menu" role="listbox" aria-label="Оценка загруженности">
-                  {WORKLOAD_RATINGS.map((value) => (
-                    <button
-                      key={value}
-                      className={'type-selector__option' + (value === workload ? ' type-selector__option--active' : '')}
-                      role="option"
-                      aria-selected={value === workload}
-                      onClick={() => { setWorkload(value); setOpenDropdown(null); }}
-                    >
-                      {value}
-                    </button>
-                  ))}
+                <div className="type-selector__menu" role="listbox" aria-label="Оценка загруженности по шкале от 1 до 5">
+                  {STATUS_REPORT_SCALE_VALUES.map((n) => {
+                    const value = String(n);
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        className={'type-selector__option' + (value === workload ? ' type-selector__option--active' : '')}
+                        role="option"
+                        aria-selected={value === workload}
+                        onClick={() => { setWorkload(value); setOpenDropdown(null); }}
+                      >
+                        {value}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        <button className="modal-status__save-btn" onClick={onSave}>Сохранить</button>
+        <button
+          type="button"
+          className="modal-status__save-btn"
+          disabled={!benefit || !workload}
+          onClick={() => {
+            if (benefit && workload) onSave?.({ benefit, workload });
+          }}
+        >
+          Сохранить
+        </button>
       </div>
     </div>
   );
