@@ -2,5 +2,4 @@
 
 public interface IAuthRepository
 {
-    Task InviteUserAsync(In)
 }

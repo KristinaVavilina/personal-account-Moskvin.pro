@@ -28,12 +28,16 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var seqUrl = Environment.GetEnvironmentVariable("Seq__ServerUrl")
+             ?? builder.Configuration["Seq:ServerUrl"]
+             ?? "http://seq:80";
+
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .Enrich.FromLogContext()
     .Enrich.WithMachineName()
     .WriteTo.Console()
-    .WriteTo.Seq("http://localhost:5341")
+    .WriteTo.Seq("http://seq:80")
     .CreateLogger();
 
 builder.Host.UseSerilog();
