@@ -1,0 +1,1375 @@
+// =====================================================
+//  Страница «База знаний»
+// =====================================================
+.kb-page {
+  flex: 1;
+  display: flex;
+  gap: 3rem;
+  height: 100%;
+  min-width: 0;
+  z-index: 2;
+}
+
+// =====================================================
+//  Левая колонка — поиск + дерево
+// =====================================================
+.kb-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 3.5rem;
+  width: 38rem;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+// =====================================================
+//  Поиск
+// =====================================================
+.kb-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  height: 5rem;
+  padding: 1rem 2rem;
+  background: #ffffff;
+  border-radius: 2rem;
+  box-shadow: inset 0.5rem 0.5rem 1rem 0 rgba(170, 188, 221, 0.6);
+
+  &__icon {
+    width: 3rem;
+    height: 3rem;
+    flex-shrink: 0;
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 500;
+    font-size: 2.4rem;
+    color: var(--accent-dark);
+
+    &::placeholder {
+      color: #b8b8b8;
+    }
+
+    // Свой крестик — `kb-search__clear`, нативный скрываем.
+    &::-webkit-search-cancel-button {
+      -webkit-appearance: none;
+      appearance: none;
+      display: none;
+    }
+  }
+
+  &__clear {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.2rem;
+    height: 3.2rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0.8rem;
+    background: transparent;
+    color: var(--accent-dark);
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+
+    &:hover {
+      opacity: 0.75;
+    }
+
+    &:focus-visible {
+      outline: 0.2rem solid var(--accent-dark);
+      outline-offset: 0.2rem;
+    }
+  }
+
+  &__clear-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    object-fit: contain;
+    pointer-events: none;
+  }
+}
+
+// =====================================================
+//  Дерево папок и файлов
+// =====================================================
+.kb-tree {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 2rem;
+  background: var(--surface-inset);
+  overflow: hidden;
+
+  &__inner-shadow {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: var(--shadow-inner-lg);
+    z-index: 3;
+  }
+
+  &__inner {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 3rem;
+
+    scrollbar-color: #aabcdd transparent;
+    scrollbar-width: thin;
+
+    &::-webkit-scrollbar {
+      width: 0.8rem;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #aabcdd;
+      border-radius: 0.6rem;
+      transition: background 0.2s ease;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-light);
+    }
+  }
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  &__children {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.6rem;
+  }
+
+  // Обёртка: пилюля только у .kb-tree__row-main, «…» в .kb-tree__row-actions — сбоку, без общего фона
+  &__row-wrap {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 1.2rem;
+    max-width: 100%;
+
+    .kb-tree__more {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease, box-shadow 0.2s ease;
+    }
+
+    &:hover .kb-tree__more,
+    &:focus-within .kb-tree__more,
+    .kb-tree__more[data-state='open'],
+    .kb-tree__more:focus-visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  &__row-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__row-main {
+    flex: 1;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    max-width: 100%;
+    padding: 0.4rem 1.2rem;
+    border: none;
+    border-radius: 2rem;
+    background: var(--surface-inset);
+    color: var(--accent-dark);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 2rem;
+    line-height: 1.2;
+    text-align: left;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease;
+
+    &:hover,
+    .kb-tree__row-wrap:hover & {
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  &__row-wrap--selected .kb-tree__row-main,
+  &__row-wrap--selected .kb-tree__row-main:hover,
+  &__row-wrap--selected:hover .kb-tree__row-main {
+    box-shadow: var(--shadow-day);
+  }
+
+  &__more {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.2rem;
+    height: 3.2rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 1.2rem;
+    color: var(--accent-dark);
+    background: var(--surface-inset);
+    box-shadow: none;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, opacity 0.2s ease;
+
+    &:hover {
+      box-shadow: var(--shadow-sm);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  // Содержимое меню: визуальная «коробка» — на data-radix-popper-content-wrapper (см. ниже, Figma 540:2194)
+  &__menu {
+    z-index: 200;
+    min-width: 15rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  &__menu-item {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 2rem;
+    background: var(--surface-inset);
+    color: var(--accent-dark);
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 500;
+    line-height: normal;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    outline: none;
+    transition: box-shadow 0.2s ease, opacity 0.15s ease;
+
+    &:hover,
+    &[data-highlighted] {
+      box-shadow: var(--shadow-lg);
+    }
+
+    &:active {
+      box-shadow: var(--shadow-inner);
+    }
+
+    &--danger {
+      color: var(--danger);
+    }
+
+    &:focus-visible {
+      box-shadow: var(--shadow-lg);
+    }
+  }
+
+  &__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__match {
+    font-weight: 800;
+  }
+
+  &__chevron {
+    width: 1.6rem;
+    height: 1rem;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+    transform: rotate(-90deg);
+
+    &--open {
+      transform: rotate(0deg);
+    }
+  }
+
+  &__empty {
+    padding: 2rem;
+    color: var(--accent-light);
+    font-size: 1.8rem;
+    text-align: center;
+  }
+}
+
+// Radix Portal: внешний контейнер контекстного меню дерева (Figma — Context Menu, node 540:2194)
+[data-radix-popper-content-wrapper]:has(.kb-tree__menu) {
+  box-sizing: border-box;
+  padding: 1.5rem;
+  border-radius: 2rem;
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+// =====================================================
+//  Правая колонка — вкладки + сетка документов
+// =====================================================
+.kb-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  min-width: 0;
+  height: 100%;
+
+  &__tabs {
+    display: flex;
+    gap: 9rem;
+    height: 7rem;
+    padding: 1.5rem;
+    background: var(--surface-inset);
+    border-radius: 4.5rem;
+    box-shadow: -1rem -1rem 2rem 0 #ffffff, 1rem 1rem 2rem 0 rgba(170, 188, 221, 0.6);
+    flex-shrink: 0;
+  }
+
+  &__tab {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2rem;
+    background: var(--surface-inset);
+    box-shadow: var(--shadow-sm);
+    color: var(--accent-dark);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 500;
+    font-size: 2.4rem;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease;
+
+    &:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    &:active {
+      box-shadow: var(--shadow-inner);
+    }
+
+    &--active {
+      box-shadow: none;
+      position: relative;
+      pointer-events: none;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        box-shadow: var(--shadow-inner);
+        pointer-events: none;
+      }
+    }
+  }
+}
+
+// =====================================================
+//  Сетка документов
+// =====================================================
+.kb-documents {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: 2rem;
+  background: var(--surface-inset);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  &__inner-shadow {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: var(--shadow-inner-lg);
+    z-index: 3;
+  }
+
+  &__grid {
+    flex: 1;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 3rem;
+    padding: 3rem;
+    align-content: start;
+    position: relative;
+    z-index: 1;
+
+    scrollbar-color: #aabcdd transparent;
+    scrollbar-width: thin;
+
+    &::-webkit-scrollbar {
+      width: 0.8rem;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #aabcdd;
+      border-radius: 0.6rem;
+      transition: background 0.2s ease;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-light);
+    }
+  }
+
+  &__empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 4rem;
+    color: var(--accent-light);
+    font-size: 2rem;
+    font-weight: 500;
+    text-align: center;
+    user-select: none;
+    position: relative;
+    z-index: 1;
+  }
+
+  &__empty-icon {
+    font-size: 3.6rem;
+    line-height: 1;
+    opacity: 0.5;
+  }
+}
+
+// =====================================================
+//  Карточка документа
+// =====================================================
+.kb-doc-card {
+  width: 100%;
+  height: 22rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: 1.5rem;
+  border-radius: 2rem;
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-sm);
+  color: var(--accent-dark);
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: -0.8rem -0.8rem 1.5rem 0 #ffffff, 0.8rem 0.8rem 1.5rem 0 #aabcdd;
+  }
+
+  &:active {
+    box-shadow: var(--shadow-inner);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: -0.8rem -0.8rem 1.5rem 0 #ffffff, 0.8rem 0.8rem 1.5rem 0 #aabcdd;
+  }
+
+  &__cover {
+    width: 8.5rem;
+    height: 8.5rem;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--surface-inset);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__cover-icon {
+    width: 3.6rem;
+    height: 4.4rem;
+    object-fit: contain;
+  }
+
+  &__title {
+    font-family: 'Inter', 'Nunito', sans-serif;
+    font-weight: 500;
+    font-size: 1.5rem;
+    line-height: 1.2;
+    text-align: center;
+    color: var(--accent-dark);
+  }
+
+  &__path {
+    font-size: 1.2rem;
+    line-height: 1.2;
+    text-align: center;
+    color: var(--accent-light);
+    max-width: 100%;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}
+
+// =====================================================
+//  Список результатов поиска
+// =====================================================
+.kb-results {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 3rem;
+  overflow-y: auto;
+  align-content: start;
+  position: relative;
+  z-index: 1;
+
+  scrollbar-color: #aabcdd transparent;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    width: 0.8rem;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #aabcdd;
+    border-radius: 0.6rem;
+    transition: background 0.2s ease;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-light);
+  }
+}
+
+.kb-result-row {
+  width: 100%;
+  height: 6rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 2rem;
+  border-radius: 2rem;
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-sm);
+  color: var(--accent-dark);
+  cursor: pointer;
+  text-align: left;
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  &:active {
+    box-shadow: var(--shadow-inner);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-lg);
+  }
+
+  // Папка в результатах поиска не кликабельна — только отображение.
+  &--folder {
+    cursor: default;
+
+    &:hover,
+    &:active,
+    &:focus-visible {
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  &__icon {
+    width: 5rem;
+    height: 5rem;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    img {
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    // Папка имеет квадратную пропорцию.
+    &--folder img {
+      width: 50%;
+      height: 50%;
+    }
+
+    // Документ имеет вертикальную пропорцию ~3:4.
+    &--file img {
+      width: 2rem;
+      height: 4.4rem;
+    }
+  }
+
+  &__icon-img {
+    object-fit: contain;
+  }
+
+  &__title {
+    flex: 1 1 0;
+    min-width: 0;
+    font-family: 'Nunito', 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 2.5rem;
+    line-height: 1.1;
+    color: var(--accent-dark);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__match {
+    font-weight: 800;
+  }
+
+  &__path {
+    flex: 1 1 0;
+    min-width: 0;
+    font-family: 'Nunito', 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 2rem;
+    line-height: 1.2;
+    color: var(--accent-light);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// =====================================================
+//  Архив — пустой сайдбар (вместо дерева)
+// =====================================================
+.kb-archive-empty {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 3rem;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-inner-lg);
+  overflow: hidden;
+
+  &__text {
+    max-width: 24rem;
+    color: var(--accent-light);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 500;
+    font-size: 3rem;
+    line-height: 1.1;
+    text-align: center;
+  }
+}
+
+// =====================================================
+//  Архив — список карточек с действиями
+// =====================================================
+.kb-archive-list {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: 2rem;
+  background: var(--surface-inset);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  &__inner {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 3rem;
+    z-index: 2;
+
+    scrollbar-color: #aabcdd transparent;
+    scrollbar-width: thin;
+
+    &::-webkit-scrollbar {
+      width: 0.8rem;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #aabcdd;
+      border-radius: 0.6rem;
+      transition: background 0.2s ease;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-light);
+    }
+  }
+
+  &__shadow {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: var(--shadow-inner-lg);
+    z-index: 1;
+  }
+
+  &__empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 4rem;
+    color: var(--accent-light);
+    font-size: 2rem;
+    font-weight: 500;
+    text-align: center;
+    user-select: none;
+    z-index: 2;
+  }
+}
+
+// Одна карточка архива
+.kb-archive-row {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem;
+  border-radius: 2rem;
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+
+  &__icon {
+    width: 5rem;
+    height: 5rem;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    img {
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    // Папка чуть выходит за рамки 5rem-контейнера, чтобы тень
+    // соответствовала макету Figma (inset[-5%, -10%]).
+    &--folder img {
+      width: 70%;
+      height: 70%;
+    }
+
+    // Документ имеет вертикальную пропорцию ~3:4.
+    &--file img {
+      width: 3rem;
+      height: 4.4rem;
+    }
+  }
+
+  &__lead {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  &__title {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 500;
+    font-size: 2.5rem;
+    line-height: 1.2;
+    color: var(--accent-dark);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__path {
+    font-size: 1.8rem;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--accent-light);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__title-strong {
+    font-weight: 800;
+  }
+
+  &__meta {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 500;
+    font-size: 2rem;
+    line-height: 1.1;
+    color: var(--accent-light);
+  }
+
+  &__meta-line {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__restore {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    height: 6rem;
+    padding: 1rem 1.5rem;
+    border-radius: 2rem;
+    background: var(--surface-inset);
+    box-shadow: var(--shadow-sm);
+    color: var(--accent-dark);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 2rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease;
+
+    &:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    &:active {
+      box-shadow: var(--shadow-inner);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--shadow-lg);
+    }
+  }
+
+  &__restore-icon {
+    width: 2rem;
+    height: 1.7rem;
+    flex-shrink: 0;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  &__delete {
+    flex-shrink: 0;
+    width: 6rem;
+    height: 6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2rem;
+    background: var(--surface-inset);
+    box-shadow:
+      -0.5rem -0.5rem 1rem 0 #ffffff,
+      0.5rem 0.5rem 1rem 0 rgba(250, 138, 138, 0.6);
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.1s ease;
+
+    &:hover {
+      box-shadow:
+        -0.5rem -0.5rem 1rem 0 #ffffff,
+        0.6rem 0.6rem 1.4rem 0 rgba(250, 138, 138, 0.8);
+    }
+
+    &:active {
+      box-shadow: inset 0.4rem 0.4rem 0.8rem 0 rgba(250, 138, 138, 0.6),
+        inset -0.4rem -0.4rem 0.8rem 0 #ffffff;
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow:
+        -0.5rem -0.5rem 1rem 0 #ffffff,
+        0.6rem 0.6rem 1.4rem 0 rgba(250, 138, 138, 0.8);
+    }
+  }
+
+  &__delete-icon {
+    width: 2.6rem;
+    height: 3.2rem;
+    object-fit: contain;
+    pointer-events: none;
+  }
+}
+
+// =====================================================
+//  Редактор файла «База знаний»
+// =====================================================
+.kb-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  border-radius: 2rem;
+  background: var(--surface-inset);
+  box-shadow: -1rem -1rem 2rem 0 #ffffff, 1rem 1rem 2rem 0 rgba(170, 188, 221, 0.6);
+
+  &__header,
+  &__footer {
+    height: 8rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: var(--surface-inset);
+    box-shadow: var(--shadow-sm);
+    z-index: 2;
+  }
+
+  &__header {
+    justify-content: space-between;
+    gap: 2rem;
+    border-radius: 2rem 2rem 0 0;
+  }
+
+  &__title-block {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  &__title {
+    margin: 0;
+    font-family: 'Nunito', 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 2rem;
+    line-height: 1.2;
+    color: var(--accent-dark);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__path {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--accent-light);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__header-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  &__footer {
+    justify-content: space-between;
+    border-radius: 0 0 2rem 2rem;
+  }
+
+  &__footer-group {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  &__save {
+    width: 20rem;
+    height: 5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2rem;
+    background: var(--surface-inset);
+    box-shadow: var(--shadow-sm);
+    color: var(--accent-dark);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 500;
+    font-size: 2.4rem;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, opacity 0.2s ease;
+
+    &:hover:not(:disabled) {
+      box-shadow: var(--shadow-lg);
+    }
+
+    &:active:not(:disabled) {
+      box-shadow: var(--shadow-inner);
+    }
+
+    &--disabled,
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  &__icon-btn {
+    width: 5rem;
+    height: 5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--surface-inset);
+    box-shadow: var(--shadow-sm);
+    color: var(--accent-dark);
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, color 0.2s ease;
+
+    &:hover:not(:disabled) {
+      box-shadow: var(--shadow-lg);
+    }
+
+    &:active:not(:disabled) {
+      box-shadow: var(--shadow-inner);
+    }
+
+    &--active {
+      box-shadow: var(--shadow-inner);
+
+      &:hover:not(:disabled) {
+        box-shadow: var(--shadow-inner);
+      }
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  &__icon-img {
+    width: 2.6rem;
+    height: 2.2rem;
+    object-fit: contain;
+    flex-shrink: 0;
+    pointer-events: none;
+
+    &--bookmark {
+      width: 2.2rem;
+      height: 2.6rem;
+    }
+  }
+
+  // ── Тело редактора ────────────────────────────────────────────────────────
+  &__body {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    background: #ffffff;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    // EditorContent оборачивает ProseMirror в собственный <div>.
+    > div {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  &__content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 3rem;
+    outline: none;
+    color: var(--accent-dark);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 500;
+    font-size: 2rem;
+    line-height: 1.5;
+
+    > p:first-child,
+    > h1:first-child,
+    > h2:first-child,
+    > h3:first-child {
+      margin-top: 0;
+    }
+
+    > * {
+      margin: 0;
+    }
+
+    > * + * {
+      margin-top: 2rem;
+    }
+
+    p {
+      text-align: justify;
+    }
+
+    h1 {
+      font-family: 'Inter', 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 3.2rem;
+      line-height: 1.2;
+      color: var(--accent-dark);
+    }
+
+    h2 {
+      font-family: 'Inter', 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 2.6rem;
+      line-height: 1.3;
+      color: var(--accent-dark);
+    }
+
+    h3 {
+      font-family: 'Inter', 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 2.2rem;
+      line-height: 1.3;
+      color: var(--accent-dark);
+    }
+
+    strong {
+      font-weight: 700;
+      color: var(--accent-dark);
+    }
+
+    em {
+      font-style: italic;
+    }
+
+    a {
+      color: var(--accent-dark);
+      text-decoration: underline;
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+
+      &:hover {
+        opacity: 0.7;
+      }
+    }
+
+    ul,
+    ol {
+      padding-left: 3rem;
+      text-align: left;
+    }
+
+    li {
+      text-align: left;
+
+      & + li {
+        margin-top: 0.6rem;
+      }
+
+      p {
+        margin: 0;
+        text-align: left;
+      }
+
+      &::marker {
+        color: var(--accent-dark);
+      }
+    }
+
+    blockquote {
+      padding: 1rem 0 1rem 2rem;
+      border-left: 0.4rem solid #aabcdd;
+      color: rgba(74, 85, 104, 0.85);
+      font-style: italic;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+      font-size: 0.92em;
+      padding: 0.15em 0.5em;
+      border-radius: 0.4rem;
+      background: rgba(60, 80, 130, 0.08);
+      color: var(--accent-dark);
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid rgba(74, 85, 104, 0.2);
+      margin: 1rem 0;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border-radius: 0.4rem;
+    }
+
+    .kb-editor__image {
+      width: 31.1rem;
+      height: 21.9rem;
+      object-fit: cover;
+      opacity: 0.7;
+    }
+
+    scrollbar-color: #aabcdd transparent;
+    scrollbar-width: thin;
+
+    &::-webkit-scrollbar {
+      width: 0.8rem;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #aabcdd;
+      border-radius: 0.6rem;
+      transition: background 0.2s ease;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-light);
+    }
+  }
+
+  &__highlight {
+    color: #8cb6ff;
+  }
+
+  // ── Плавающий тулбар форматирования (TipTap BubbleMenu) ───────────────────
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem;
+    background: var(--surface-inset);
+    border-radius: 2rem;
+    box-shadow: var(--shadow-sm);
+    z-index: 5;
+    user-select: none;
+  }
+
+  &__tool {
+    width: 5rem;
+    height: 5rem;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--surface-inset);
+    box-shadow: var(--shadow-sm);
+    color: var(--accent-dark);
+    font-family: 'Nunito', 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    transition: box-shadow 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    &:active,
+    &--active {
+      box-shadow: var(--shadow-inner);
+    }
+  }
+
+  // SVG-иконки в тулбаре (B / I / U / link). Размеры 1:1 с макетом Figma.
+  &__tool-icon {
+    display: block;
+    flex-shrink: 0;
+    object-fit: contain;
+    pointer-events: none;
+
+    &--italic {
+      width: 1.2rem;
+      height: 2rem;
+    }
+
+    &--bold {
+      width: 1.5rem;
+      height: 1.9rem;
+    }
+
+    &--underline {
+      width: 1.3rem;
+      height: 2.1rem;
+    }
+
+    &--link {
+      width: 1.6rem;
+      height: 1.6rem;
+    }
+  }
+}

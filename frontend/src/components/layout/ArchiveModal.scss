@@ -1,0 +1,209 @@
+.modal-archive {
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: -1rem -1rem 2rem 0 rgba(0, 0, 0, 0.25),
+               1rem  1rem 2rem 0 rgba(0, 0, 0, 0.25);
+  width: 130rem;
+  max-width: 90vw;
+  height: 88rem;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  padding: 3rem;
+  align-items: center;
+}
+
+// ─── Header ───────────────────────────────────────────
+
+.modal-archive__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.modal-archive__title {
+  font-size: 3.6rem;
+  font-weight: 600;
+  color: var(--accent-dark);
+  white-space: nowrap;
+}
+
+.modal-archive__close-btn {
+  width: 5rem;
+  height: 5rem;
+  background: var(--surface-inset);
+  border-radius: 100px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  &:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  &:active {
+    box-shadow: var(--shadow-inner);
+  }
+}
+
+// ─── Body (scrollable list) ──────────────────────────
+
+.modal-archive__body {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  border-radius: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-archive__list {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.modal-archive__inner-shadow {
+  position: absolute;
+  inset: 0;
+  border-radius: 2rem;
+  box-shadow: var(--shadow-inner-lg);
+  pointer-events: none;
+  z-index: 1;
+}
+
+// ─── Loading spinner ─────────────────────────────────
+
+.modal-archive__spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 4.8rem;
+  height: 4.8rem;
+  border-radius: 50%;
+  border: 0.6rem solid var(--accent-light);
+  border-top-color: var(--accent-dark);
+  animation: archive-spinner-rotate 0.8s linear infinite;
+  opacity: 0.6;
+  z-index: 2;
+}
+
+@keyframes archive-spinner-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+// ─── Empty state ─────────────────────────────────────
+
+.modal-archive__empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  font-size: 2.4rem;
+  font-weight: 500;
+  color: var(--accent-light);
+  text-align: center;
+  user-select: none;
+}
+
+.modal-archive__empty-icon {
+  font-size: 4.8rem;
+  line-height: 1;
+  opacity: 0.5;
+}
+
+// ─── Archive item ────────────────────────────────────
+
+.archive-item {
+  width: 100%;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2rem;
+  flex-shrink: 0;
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+.archive-item__name {
+  font-size: 3.2rem;
+  font-weight: 500;
+  color: var(--accent-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.archive-item__expiry {
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--accent-light);
+  white-space: nowrap;
+  flex: 1;
+  text-align: center;
+}
+
+.archive-item__restore-btn {
+  width: 5rem;
+  height: 5rem;
+  background: var(--surface-inset);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 2rem;
+  padding: 0.8rem;
+  transition: box-shadow 0.2s ease;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  &:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  &:active {
+    box-shadow: var(--shadow-inner);
+  }
+}

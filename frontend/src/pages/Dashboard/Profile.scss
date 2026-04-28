@@ -1,0 +1,245 @@
+// =====================================================
+//  Карточка аккаунта
+// =====================================================
+.account-card {
+  flex: 1;
+  width: 100%;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  display: flex;
+
+  &__inner-shadow {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  &__content {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-height: 0;
+    padding: 4rem 5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+}
+
+// =====================================================
+//  Тело виджета профиля
+// =====================================================
+.profile-widget__body {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 4rem;
+  width: 100%;
+}
+
+// =====================================================
+//  Шапка профиля
+// =====================================================
+.account-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.8rem;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.account-avatar {
+  position: relative;
+  width: 20rem;
+  height: 20rem;
+  border-radius: 50%;
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-sm);
+  padding: 0.6rem;
+  cursor: pointer;
+  border: none;
+  flex-shrink: 0;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+  }
+
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(74, 85, 104, 0.55);
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    padding: 0 1rem;
+  }
+
+  &:hover &__overlay,
+  &:focus-visible &__overlay {
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-dark);
+    outline-offset: 3px;
+  }
+
+  &__input {
+    display: none;
+  }
+}
+
+.account-role {
+  width: fit-content;
+  max-width: 100%;
+  background: var(--surface-inset);
+  border-radius: 10rem;
+  box-shadow: var(--shadow-sm);
+  padding: 0.6rem 1.6rem;
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--accent-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// =====================================================
+//  Форма профиля
+// =====================================================
+.account-form {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4.2rem 7rem;
+  align-items: start;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+    gap: 3.2rem;
+  }
+}
+
+.field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+
+  &__label {
+    font-size: 2.4rem;
+    font-weight: 500;
+    color: var(--accent-dark);
+    opacity: 0.9;
+  }
+
+  &__control {
+    position: relative;
+    min-width: 0;
+  }
+
+  &__input {
+    width: 100%;
+    height: 5.8rem;
+    border-radius: 2rem;
+    padding: 0 6.2rem 0 2.2rem;
+    font-size: 2.2rem;
+    font-weight: 500;
+    color: var(--accent-dark);
+    background: var(--surface-inset);
+    box-shadow: var(--shadow-sm);
+    border: none;
+    outline: none;
+
+    &:focus-visible { box-shadow: var(--shadow-lg); }
+  }
+
+  &__icon {
+    position: absolute;
+    right: 1.2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3.8rem;
+    height: 3.8rem;
+    border-radius: 1.4rem;
+    background: var(--surface-inset);
+    box-shadow: var(--shadow-inner-subtle);
+    display: grid;
+    place-items: center;
+    cursor: default;
+
+    &::before {
+      content: '';
+      width: 2rem;
+      height: 2rem;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      opacity: 0.9;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%234a5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3l18 18'/%3E%3Cpath d='M10.6 10.6a2 2 0 0 0 2.8 2.8'/%3E%3Cpath d='M9.88 5.08A10.94 10.94 0 0 1 12 5c6 0 10 7 10 7a18.28 18.28 0 0 1-4.31 5.07'/%3E%3Cpath d='M6.61 6.61C3.29 8.77 2 12 2 12s4 7 10 7a9.74 9.74 0 0 0 3.39-.61'/%3E%3C/g%3E%3C/svg%3E");
+    }
+  }
+}
+
+// =====================================================
+//  Действия аккаунта
+// =====================================================
+.account-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: auto;
+  padding-top: 1rem;
+  width: 100%;
+
+  @media (max-width: 1100px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.btn--action {
+  width: 50rem;
+  height: 6rem;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-sm);
+  font-size: 2.4rem;
+  font-weight: 600;
+  color: var(--accent-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3.2rem;
+  transition: box-shadow 0.2s ease;
+  white-space: nowrap;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+
+  &:hover { box-shadow: var(--shadow-lg); }
+  &:active { box-shadow: var(--shadow-inner); }
+}

@@ -1,0 +1,102 @@
+.sidebar {
+  width: 9rem;
+  height: 100%;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 1rem;
+  flex-shrink: 0;
+  z-index: 3;
+}
+
+.sidebar__logo,
+.sidebar__item,
+.sidebar__profile {
+  width: 6rem;
+  height: 6rem;
+  background: var(--surface-inset);
+  border-radius: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  flex-shrink: 0;
+  text-decoration: none;
+  color: inherit;
+
+  img {
+    width: 3.5rem;
+    height: auto;
+    object-fit: contain;
+    display: block;
+  }
+}
+
+.sidebar__logo {
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+
+  &:hover { box-shadow: var(--shadow-lg); }
+  &:active { box-shadow: var(--shadow-inner); }
+}
+
+.sidebar__menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: center;
+  width: 6rem;
+}
+
+.sidebar__item {
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+  position: relative;
+
+  &:hover { box-shadow: var(--shadow-lg); }
+  &:active { box-shadow: var(--shadow-inner); }
+
+  &--active {
+    box-shadow: none;
+    pointer-events: none;
+    cursor: default;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow: inset 0.5rem 0.5rem 1rem 0 #aabcdd, inset -0.5rem -0.5rem 1rem 0 #ffffff;
+      pointer-events: none;
+    }
+
+    &:hover { box-shadow: none; }
+  }
+}
+
+.sidebar__profile {
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+  position: relative;
+
+  &:hover { box-shadow: var(--shadow-lg); }
+  &:active { box-shadow: var(--shadow-inner); }
+
+  &.sidebar__item--active {
+    box-shadow: none;
+    pointer-events: none;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow: inset 0.5rem 0.5rem 1rem 0 #aabcdd, inset -0.5rem -0.5rem 1rem 0 #ffffff;
+      pointer-events: none;
+    }
+  }
+}
