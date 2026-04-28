@@ -33,8 +33,10 @@ export const Sidebar = () => {
           <img src={progressIcon} alt="Прогресс" />
         </NavLink>
         <NavLink
-          to="#"
-          className="sidebar__item"
+          to={ROUTE.KNOWLEDGE_BASE}
+          className={({ isActive }) =>
+            'sidebar__item' + (isActive ? ' sidebar__item--active' : '')
+          }
           aria-label="База знаний"
         >
           <img src={knowledgeBaseIcon} alt="База знаний" />

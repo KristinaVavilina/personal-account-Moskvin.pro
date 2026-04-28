@@ -4,6 +4,7 @@ import { DashboardTabsPage } from './pages/Dashboard/DashboardTabsPage';
 import { ProfilePage } from './pages/Dashboard/ProfilePage';
 import { LoginPage } from './pages/Login/LoginPage';
 import { FirstLoginPage } from './pages/Login/FirstLoginPage';
+import { KnowledgeBasePage } from './pages/KnowledgeBase/KnowledgeBasePage';
 import { ROUTE } from './constants';
 import { useUserStore } from './store/useUserStore';
 
@@ -30,6 +31,7 @@ function App() {
           <Route path={ROUTE.PROGRESS.slice(1)} element={<DashboardTabsPage />} />
           <Route path={ROUTE.REPORTING.slice(1)} element={<DashboardTabsPage />} />
           <Route path={ROUTE.CALENDAR.slice(1)} element={<DashboardTabsPage />} />
+          <Route path={ROUTE.KNOWLEDGE_BASE.slice(1)} element={<KnowledgeBasePage />} />
           <Route path={ROUTE.PROFILE.slice(1)} element={<ProfilePage />} />
         </Route>
 

@@ -6,5 +6,6 @@ export const ROUTE = {
   REPORTING: '/reporting',
   CALENDAR: '/calendar',
   PROFILE: '/profile',
+  KNOWLEDGE_BASE: '/knowledge-base',
   HOME: '/',
 } as const;
