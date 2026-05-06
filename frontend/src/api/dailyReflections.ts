@@ -4,12 +4,15 @@ import { USE_PROGRESS_MOCK } from '../config/progressSource';
 import {
   getMockDailyReflectionRowsForMonth,
 } from '../mocks/progressDashboardMock';
-import type { ApiDailyReflectionResponse } from '../types/dailyReflectionApi';
+import type {
+  ApiDailyReflectionResponse,
+  ApiDailyReflectionWriteRequest,
+} from '../types/dailyReflectionApi';
 import { resolveDevUserId } from './devUser';
 import { readJson } from './http';
 import { dailyReflectionRowsToBenefitWorkloadSeries } from '../utils/progressDashboardTransform';
 
-export type { ApiDailyReflectionResponse } from '../types/dailyReflectionApi';
+export type { ApiDailyReflectionResponse, ApiDailyReflectionWriteRequest } from '../types/dailyReflectionApi';
 
 /**
  * Точки графика «польза / загруженность» за календарный месяц из DailyReflection.
@@ -34,4 +37,42 @@ export async function fetchBenefitWorkloadForMonth(
   if (!Array.isArray(all)) return [];
 
   return dailyReflectionRowsToBenefitWorkloadSeries(all, userId, year, monthIndex0);
+}
+
+/** Полный список рефлексий (GET /api/DailyReflection). */
+export async function fetchDailyReflectionsAll(): Promise<ApiDailyReflectionResponse[]> {
+  const res = await fetch('/api/DailyReflection');
+  const raw = await readJson<ApiDailyReflectionResponse[]>(res);
+  return Array.isArray(raw) ? raw : [];
+}
+
+export async function fetchDailyReflectionById(id: string): Promise<ApiDailyReflectionResponse> {
+  const res = await fetch(`/api/DailyReflection/${encodeURIComponent(id)}`);
+  return readJson<ApiDailyReflectionResponse>(res);
+}
+
+export async function createDailyReflection(body: ApiDailyReflectionWriteRequest): Promise<string> {
+  const res = await fetch('/api/DailyReflection', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return readJson<string>(res);
+}
+
+export async function updateDailyReflection(
+  id: string,
+  body: ApiDailyReflectionWriteRequest,
+): Promise<void> {
+  const res = await fetch(`/api/DailyReflection/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  await readJson<string>(res);
+}
+
+export async function deleteDailyReflection(id: string): Promise<void> {
+  const res = await fetch(`/api/DailyReflection/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  await readJson<string>(res);
 }

@@ -11,8 +11,8 @@ import './EditTaskModal.scss';
 interface EditTaskModalProps {
   task: TaskListItem;
   onClose: () => void;
-  onSave: (updated: TaskListItem) => void;
-  onDelete: (id: string) => void;
+  onSave: (updated: TaskListItem) => void | Promise<void>;
+  onDelete: (id: string) => void | Promise<void>;
 }
 
 export const EditTaskModal = ({ task, onClose, onSave, onDelete }: EditTaskModalProps) => {
@@ -27,20 +27,30 @@ export const EditTaskModal = ({ task, onClose, onSave, onDelete }: EditTaskModal
   const toggleDropdown = (dropdown: 'type' | 'progress') =>
     setOpenDropdown((prev) => (prev === dropdown ? null : dropdown));
 
-  const handleSave = () => {
-    onSave({
-      ...task,
-      name,
-      description,
-      taskType,
-      progress: labelToProgressNumber(taskProgress),
-    });
-    onClose();
+  const handleSave = async () => {
+    try {
+      await Promise.resolve(
+        onSave({
+          ...task,
+          name,
+          description,
+          taskType,
+          progress: labelToProgressNumber(taskProgress),
+        }),
+      );
+      onClose();
+    } catch {
+      /* ошибка снаружи */
+    }
   };
 
-  const handleDelete = () => {
-    onDelete(task.id);
-    onClose();
+  const handleDelete = async () => {
+    try {
+      await Promise.resolve(onDelete(task.id));
+      onClose();
+    } catch {
+      /* ошибка снаружи */
+    }
   };
 
   return (
