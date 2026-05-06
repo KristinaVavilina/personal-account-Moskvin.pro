@@ -30,7 +30,7 @@ export const DAY_NAMES = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'
 
 export type TaskCategory = 'task' | 'discussion' | 'education' | 'routine' | 'other';
 
-/** Полоса Ганта; id совпадает с задачей из API / mockTasks (как в task-widget). */
+/** Полоса Ганта; id совпадает с задачей из API / mockTasks. Активные и архивные. */
 export interface GanttTask {
   id: string;
   name: string;

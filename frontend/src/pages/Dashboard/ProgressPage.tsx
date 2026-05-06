@@ -1,22 +1,52 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchBenefitWorkloadForMonth } from '../../api/dailyReflections';
+import { resolveDevUserId } from '../../api/devUser';
 import { fetchCompletedTasksCountForMonth } from '../../api/tasks';
-import { useBenefitWorkloadLocalStore } from '../../store/useBenefitWorkloadLocalStore';
+import { fetchTaskTypes } from '../../api/taskTypes';
+import { fetchSystemSettings } from '../../api/systemSettings';
+import { fetchUsers } from '../../api/users';
+import { USE_PROGRESS_MOCK } from '../../config/progressSource';
+import {
+  getMockDailyReflectionRowsForMonth,
+  mockCompletedTasksCountForCalendarMonth,
+} from '../../mocks/progressDashboardMock';
 import type { BenefitWorkloadPoint } from '../../mocks/benefitWorkloadMock';
+import { useBenefitWorkloadLocalStore } from '../../store/useBenefitWorkloadLocalStore';
+import { useProgressStatsSessionStore } from '../../store/useProgressStatsSessionStore';
+import { useDayTimelineCompletionsStore } from '../../store/useDayTimelineCompletionsStore';
 import { mergeBenefitWorkloadWithLocalOverride } from '../../utils/benefitWorkloadMerge';
-import { mockDayTimelineSegments } from '../../mocks/dayTimelineMock';
-import { mockWeekBalance } from '../../mocks/weekBalanceMock';
 import { pluralRuTasks } from '../../utils';
+import {
+  aggregateSessionCompletionsToDayTimeline,
+  aggregateSessionCompletionsToWeekBalance,
+  calendarWeekBoundsLocal,
+  dailyReflectionRowsToBenefitWorkloadSeries,
+  formatLocalDateIso,
+} from '../../utils/progressDashboardTransform';
 import { BenefitWorkloadChart } from './BenefitWorkloadChart';
 import { DayTimelineChart } from './DayTimelineChart';
 import { WeekBalanceChart } from './WeekBalanceChart';
 import './Progress.scss';
 
-const isTimelineLoading = false;
+/** Подтягивает read-only эндпоинты, чтобы они были «подключены» к фронту (кэш в памяти не храним). */
+function prefetchProgressRelatedEndpoints(): void {
+  if (USE_PROGRESS_MOCK) return;
+  void Promise.all([
+    fetchTaskTypes().catch(() => []),
+    fetchSystemSettings().catch(() => []),
+    fetchUsers().catch(() => []),
+  ]);
+}
 
-const isBalanceLoading = false;
+export interface ProgressPageProps {
+  /** Увеличивать при завершении задания (100%), чтобы заново подтянуть виджеты статистики. */
+  statsRevision?: number;
+}
 
-export const ProgressPage = () => {
+export const ProgressPage = ({ statsRevision = 0 }: ProgressPageProps) => {
+  const statsMonthKeyRef = useRef<string | null>(null);
+  const completedCountServerPrevRef = useRef<number | null>(null);
+
   const [benefitWorkloadData, setBenefitWorkloadData] = useState<BenefitWorkloadPoint[]>([]);
   const [isChartLoading, setIsChartLoading] = useState(true);
   const [chartError, setChartError] = useState<string | null>(null);
@@ -24,6 +54,18 @@ export const ProgressPage = () => {
   const [isStatsLoading, setIsStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
   const todayOverride = useBenefitWorkloadLocalStore((s) => s.todayOverride);
+
+  const completionRecords = useDayTimelineCompletionsStore((s) => s.records);
+  const timelineSegments = useMemo(() => {
+    const todayIso = formatLocalDateIso(new Date());
+    return aggregateSessionCompletionsToDayTimeline(completionRecords, todayIso);
+  }, [completionRecords]);
+
+  const weekBalanceData = useMemo(() => {
+    const now = new Date();
+    const { start, end } = calendarWeekBoundsLocal(now);
+    return aggregateSessionCompletionsToWeekBalance(completionRecords, start, end);
+  }, [completionRecords]);
 
   const chartDisplayData = useMemo(() => {
     const d = new Date();
@@ -36,6 +78,10 @@ export const ProgressPage = () => {
   }, [benefitWorkloadData, todayOverride]);
 
   useEffect(() => {
+    prefetchProgressRelatedEndpoints();
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     const d = new Date();
     const year = d.getFullYear();
@@ -44,6 +90,17 @@ export const ProgressPage = () => {
       setIsChartLoading(true);
       setChartError(null);
       try {
+        if (USE_PROGRESS_MOCK) {
+          const uid = await resolveDevUserId();
+          if (!uid) {
+            if (!cancelled) setBenefitWorkloadData([]);
+            return;
+          }
+          const rows = getMockDailyReflectionRowsForMonth(year, monthIndex, uid);
+          const data = dailyReflectionRowsToBenefitWorkloadSeries(rows, uid, year, monthIndex);
+          if (!cancelled) setBenefitWorkloadData(data);
+          return;
+        }
         const data = await fetchBenefitWorkloadForMonth(year, monthIndex);
         if (!cancelled) setBenefitWorkloadData(data);
       } catch (e) {
@@ -58,19 +115,46 @@ export const ProgressPage = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [statsRevision]);
 
   useEffect(() => {
     let cancelled = false;
     const d = new Date();
     const year = d.getFullYear();
     const monthIndex = d.getMonth();
+    const monthKey = `${year}-${monthIndex}`;
+    if (statsMonthKeyRef.current !== monthKey) {
+      statsMonthKeyRef.current = monthKey;
+      completedCountServerPrevRef.current = null;
+      useProgressStatsSessionStore.getState().resetCompletedMonthOptimistic();
+    }
+
     (async () => {
       setIsStatsLoading(true);
       setStatsError(null);
       try {
+        const session = useProgressStatsSessionStore.getState();
+        const prevServer = completedCountServerPrevRef.current;
+
+        if (USE_PROGRESS_MOCK) {
+          const uid = await resolveDevUserId();
+          if (!uid) {
+            if (!cancelled) setStatsCount(null);
+            return;
+          }
+          const n = mockCompletedTasksCountForCalendarMonth(uid, year, monthIndex);
+          if (prevServer !== null) session.consumeCompletedMonthOptimistic(n, prevServer);
+          completedCountServerPrevRef.current = n;
+          const optimistic = useProgressStatsSessionStore.getState().completedMonthOptimistic;
+          if (!cancelled) setStatsCount(n + optimistic);
+          return;
+        }
         const n = await fetchCompletedTasksCountForMonth(year, monthIndex);
-        if (!cancelled) setStatsCount(n);
+        if (cancelled) return;
+        if (prevServer !== null) session.consumeCompletedMonthOptimistic(n, prevServer);
+        completedCountServerPrevRef.current = n;
+        const optimistic = useProgressStatsSessionStore.getState().completedMonthOptimistic;
+        setStatsCount(n + optimistic);
       } catch (e) {
         if (!cancelled) {
           setStatsError(e instanceof Error ? e.message : 'Не удалось загрузить статистику');
@@ -83,7 +167,7 @@ export const ProgressPage = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [statsRevision]);
 
   const statsMonthLabel = useMemo(() => {
     const d = new Date();
@@ -94,22 +178,19 @@ export const ProgressPage = () => {
   return (
     <div className="dashboard-grid">
       <div className="widget widget--timeline">
-        {isTimelineLoading && (
-          <div className="widget__spinner" aria-label="Загрузка" />
-        )}
         <p className="widget__title">Хронология дня</p>
         <div className="widget__content">
-          {!isTimelineLoading && mockDayTimelineSegments.length === 0 && (
+          {timelineSegments.length === 0 && (
             <div className="widget__content-empty">
               <span className="widget__content-empty-icon">📭</span>
-              <span>За сегодня нет данных</span>
+              <span>За сегодня нет выполненных заданий</span>
             </div>
           )}
-          {!isTimelineLoading && mockDayTimelineSegments.length > 0 && (
-            <DayTimelineChart segments={mockDayTimelineSegments} />
+          {timelineSegments.length > 0 && (
+            <DayTimelineChart segments={timelineSegments} />
           )}
         </div>
-        {!isTimelineLoading && mockDayTimelineSegments.length > 0 && (
+        {timelineSegments.length > 0 && (
           <div className="legend-list">
             <div className="legend-item">
               <span className="legend-item__marker legend-item__marker--task" />
@@ -205,22 +286,19 @@ export const ProgressPage = () => {
       </div>
 
       <div className="widget widget--balance">
-        {isBalanceLoading && (
-          <div className="widget__spinner" aria-label="Загрузка" />
-        )}
         <p className="widget__title">Баланс недели</p>
         <div className="widget__content">
-          {!isBalanceLoading && mockWeekBalance.length === 0 && (
+          {weekBalanceData.length === 0 && (
             <div className="widget__content-empty">
               <span className="widget__content-empty-icon">📭</span>
-              <span>Нет данных за эту неделю</span>
+              <span>Нет выполненных заданий на этой неделе</span>
             </div>
           )}
-          {!isBalanceLoading && mockWeekBalance.length > 0 && (
-            <WeekBalanceChart data={mockWeekBalance} />
+          {weekBalanceData.length > 0 && (
+            <WeekBalanceChart data={weekBalanceData} />
           )}
         </div>
-        {!isBalanceLoading && mockWeekBalance.length > 0 && (
+        {weekBalanceData.length > 0 && (
           <div className="legend-list">
             <div className="legend-item">
               <span className="legend-item__marker legend-item__marker--task" />

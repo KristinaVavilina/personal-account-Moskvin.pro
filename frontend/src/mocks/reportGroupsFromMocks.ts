@@ -1,4 +1,14 @@
-import { mockTasks, mockTimeLogs } from './apiMockData';
+import type { ApiTimeLogRow } from '../types/timeLogApi';
+import type { StoredReportEntry } from '../types/reportEntry';
+import { formatReportCalendarDate } from '../utils/reportCalendarLabel';
+import { monthBoundsIso } from '../api/timeLogs';
+import { mockTasks } from './apiMockData';
+import {
+  getMockApiTimeLogsInRange,
+  PROGRESS_MOCK_DEFAULT_USER_ID,
+} from './progressDashboardMock';
+
+export type { ApiTimeLogRow };
 
 export interface ReportWidgetItem {
   id: string;
@@ -6,36 +16,14 @@ export interface ReportWidgetItem {
   text: string;
   badge: string;
   time: string;
+  /** Только для записей из локального стора — по клику открывается редактирование. */
+  editable?: boolean;
 }
 
 export interface ReportWidgetGroup {
   id: string;
   date: string;
   items: ReportWidgetItem[];
-}
-
-const MONTHS_SHORT_GEN: Record<number, string> = {
-  1: 'янв.',
-  2: 'февр.',
-  3: 'мар.',
-  4: 'апр.',
-  5: 'мая',
-  6: 'июн.',
-  7: 'июл.',
-  8: 'авг.',
-  9: 'сент.',
-  10: 'окт.',
-  11: 'нояб.',
-  12: 'дек.',
-};
-
-function formatReportDate(iso: string): string {
-  const [ys, ms, ds] = iso.split('-');
-  const y = Number(ys);
-  const m = Number(ms);
-  const d = Number(ds);
-  const monthLabel = MONTHS_SHORT_GEN[m] ?? ms;
-  return `${d} ${monthLabel} ${y}`;
 }
 
 function formatTimePart(t: string): string {
@@ -51,21 +39,49 @@ function formatTimeRange(start: string, end: string): string {
   return `${formatTimePart(start)} - ${formatTimePart(end)}`;
 }
 
-/** Ответ API TimeLog (camelCase). */
-export interface ApiTimeLogRow {
-  id: string;
-  taskId: string;
-  userId: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  progressSnapshot?: number | null;
-  comment?: string | null;
+/** Объединение ответа API и локально сохранённых таймлогов за интервал [monthStart, monthEnd]. Локальные id перекрывают совпадения. */
+export function mergeMonthApiTimeLogsWithLocal(
+  apiLogs: ApiTimeLogRow[],
+  localEntries: StoredReportEntry[],
+  monthStart: string,
+  monthEnd: string,
+): Array<ApiTimeLogRow | StoredReportEntry> {
+  const start = monthStart.slice(0, 10);
+  const end = monthEnd.slice(0, 10);
+  const inMonth = (d: string) => {
+    const k = d.slice(0, 10);
+    return k >= start && k <= end;
+  };
+  const localInMonth = localEntries.filter((e) => inMonth(e.date));
+  const byId = new Map<string, ApiTimeLogRow | StoredReportEntry>();
+  for (const l of apiLogs) {
+    if (inMonth(l.date)) byId.set(l.id, l);
+  }
+  for (const l of localInMonth) {
+    byId.set(l.id, l);
+  }
+  return [...byId.values()];
 }
 
-/** Группы по дате из таймлогов API; заголовок — id задачи (временно). */
-export function buildReportGroupsFromApiLogs(logs: ApiTimeLogRow[]): ReportWidgetGroup[] {
-  const byDate = new Map<string, ApiTimeLogRow[]>();
+function logTitle(log: ApiTimeLogRow | StoredReportEntry, titleByTaskId: Map<string, string>): string {
+  const s = log as StoredReportEntry;
+  if (s.taskTitle?.trim()) return s.taskTitle.trim();
+  return titleByTaskId.get(log.taskId) ?? log.taskId;
+}
+
+export function buildReportGroupsFromApiLogs(
+  logs: Array<ApiTimeLogRow | StoredReportEntry>,
+  localEntryIds: Set<string>,
+  /** Подстановка заголовков (например с GET /api/Task/user/…) поверх имен из общих mockTasks. */
+  extraTaskTitles?: Map<string, string>,
+): ReportWidgetGroup[] {
+  const titleByTaskId = new Map(mockTasks.map((t) => [t.id, t.title]));
+  if (extraTaskTitles) {
+    for (const [id, title] of extraTaskTitles) {
+      titleByTaskId.set(id, title);
+    }
+  }
+  const byDate = new Map<string, Array<ApiTimeLogRow | StoredReportEntry>>();
   for (const log of logs) {
     const key = log.date.slice(0, 10);
     const list = byDate.get(key) ?? [];
@@ -75,46 +91,25 @@ export function buildReportGroupsFromApiLogs(logs: ApiTimeLogRow[]): ReportWidge
   const dates = [...byDate.keys()].sort((a, b) => b.localeCompare(a));
   return dates.map((date) => ({
     id: date,
-    date: formatReportDate(date),
+    date: formatReportCalendarDate(date),
     items: (byDate.get(date) ?? []).map((log) => {
       const progress = log.progressSnapshot ?? 0;
       return {
         id: log.id,
-        title: log.taskId,
+        title: logTitle(log, titleByTaskId),
         text: log.comment?.trim() ? log.comment.trim() : 'Комментарий не указан.',
         badge: `Выполнено: ${progress}%`,
         time: formatTimeRange(log.startTime, log.endTime),
+        editable: localEntryIds.has(log.id),
       };
     }),
   }));
 }
 
-/** Группы по дате (сначала более новые дни), элементы — записи учёта времени из моков */
+/** Группы по офлайн-мокам за текущий месяц (те же данные, что при USE_PROGRESS_MOCK для TimeLog). */
 export function getReportGroupsFromMocks(): ReportWidgetGroup[] {
-  const taskById = new Map(mockTasks.map((t) => [t.id, t]));
-  const byDate = new Map<string, typeof mockTimeLogs>();
-
-  for (const log of mockTimeLogs) {
-    const list = byDate.get(log.date) ?? [];
-    list.push(log);
-    byDate.set(log.date, list);
-  }
-
-  const dates = [...byDate.keys()].sort((a, b) => b.localeCompare(a));
-
-  return dates.map((date) => ({
-    id: date,
-    date: formatReportDate(date),
-    items: (byDate.get(date) ?? []).map((log) => {
-      const task = taskById.get(log.taskId);
-      const progress = log.progressSnapshot ?? task?.currentProgress ?? 0;
-      return {
-        id: log.id,
-        title: task?.title ?? 'Задача',
-        text: log.comment?.trim() ? log.comment.trim() : 'Комментарий не указан.',
-        badge: `Выполнено: ${progress}%`,
-        time: formatTimeRange(log.startTime, log.endTime),
-      };
-    }),
-  }));
+  const d = new Date();
+  const { start, end } = monthBoundsIso(d.getFullYear(), d.getMonth());
+  const logs = getMockApiTimeLogsInRange(PROGRESS_MOCK_DEFAULT_USER_ID, start, end, d);
+  return buildReportGroupsFromApiLogs(logs, new Set());
 }

@@ -13,8 +13,14 @@ export type DayTimelineCategory =
 export interface DayTimelineSegment {
   id: string;
   category: DayTimelineCategory;
-  /** Доля суток в часах (можно дробно) */
+  /**
+   * Вес на шкале 24 ч: для хронологии по **выполненным задачам** — доля типа от числа завершений за день;
+   * для интервалов времени по таймлогам — длительность в часах.
+   */
   hours: number;
+  /** Если задано — сегмент построен по числу завершённых задач (подписи в UI). */
+  completedInCategory?: number;
+  completedDayTotal?: number;
 }
 
 /** Порядок и палитра как в макете Figma 473:1821 */

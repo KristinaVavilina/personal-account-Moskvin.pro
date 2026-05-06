@@ -1,8 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { fetchActiveTasksForDashboard } from '../../api/tasks';
+import { useProgressStatsSessionStore } from '../../store/useProgressStatsSessionStore';
+import { useDayTimelineCompletionsStore } from '../../store/useDayTimelineCompletionsStore';
 import { PageTabs } from '../../components/layout/PageTabs';
-import { TaskPanel } from '../../components/layout/TaskPanel';
+import { TaskPanel, type TaskPanelHandle } from '../../components/layout/TaskPanel';
 import type { TaskListItem } from '../../components/layout/taskListTypes';
 import type { GanttTask } from '../../constants';
 import {
@@ -25,6 +27,22 @@ export const DashboardTabsPage = () => {
   const [taskWidgetItems, setTaskWidgetItems] = useState<TaskListItem[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
   const [tasksError, setTasksError] = useState<string | null>(null);
+  const [progressStatsRevision, setProgressStatsRevision] = useState(0);
+  const taskPanelRef = useRef<TaskPanelHandle | null>(null);
+
+  const refreshTasksAndProgressStatistics = useCallback(async (completedTask?: TaskListItem) => {
+    if (completedTask?.progress === 100) {
+      useDayTimelineCompletionsStore.getState().recordCompletedTask(completedTask);
+      useProgressStatsSessionStore.getState().incrementCompletedMonthOptimistic();
+    }
+    setProgressStatsRevision((n) => n + 1);
+    try {
+      const list = await fetchActiveTasksForDashboard();
+      setTaskWidgetItems(list);
+    } catch {
+      /* список заданий не трогаем */
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,8 +74,15 @@ export const DashboardTabsPage = () => {
       <main className="main-content">
         <PageTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-        {activeTab === 'progress' && <ProgressPage />}
-        {activeTab === 'reporting'  && <ReportingPage />}
+        {/* Не размонтировать: иначе локальный стейт виджетов (в т.ч. widget--stats) обнуляется при смене вкладки.
+            Обёртка с flex: 1 — как у прямого потомка .main-content, иначе .dashboard-grid не тянется на всю высоту. */}
+        <div
+          className="dashboard-progress-keepalive"
+          style={{ display: activeTab === 'progress' ? 'flex' : 'none' }}
+        >
+          <ProgressPage statsRevision={progressStatsRevision} />
+        </div>
+        {activeTab === 'reporting' && <ReportingPage taskPanelRef={taskPanelRef} />}
         {activeTab === 'calendar' && (
           <CalendarPage
             onTaskSelect={handleTaskSelect}
@@ -103,12 +128,14 @@ export const DashboardTabsPage = () => {
             </aside>
           )}
           <TaskPanel
+            ref={taskPanelRef}
             tasks={taskWidgetItems}
             isLoading={tasksLoading}
             initialArchivedEmpty
             actionButtonLabel={
               activeTab === 'reporting' ? TASK_PANEL_ACTION_REPORT : TASK_PANEL_ACTION_ARCHIVE
             }
+            onTaskCompletedStatisticsRefresh={refreshTasksAndProgressStatistics}
             debugAlertState={DEBUG_DASHBOARD_ALERT_STATE}
           />
         </>

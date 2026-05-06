@@ -286,8 +286,9 @@
     &:hover { filter: brightness(1.06); }
 
     &--selected {
-      outline: 0.3rem solid var(--accent-dark);
-      outline-offset: 0.2rem;
+      /* outline/outline-offset выходят за box и не режутся overflow:hidden — кажутся „хвостом“ за красную линию */
+      outline: none;
+      box-shadow: var(--shadow-sm), inset 0 0 0 0.35rem var(--accent-dark);
       filter: brightness(1.08);
     }
 

@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import type { ChartWorkloadCategory } from '../../constants';
 import {
@@ -5,7 +6,8 @@ import {
   WEEK_BALANCE_CATEGORY_FILL,
 } from '../../constants';
 import type { WeekBalanceEntry } from '../../mocks/weekBalanceMock';
-import { RECHARTS_NUNITO_TOOLTIP_STYLE } from '../../utils';
+import { pluralRuTasks, RECHARTS_NUNITO_TOOLTIP_STYLE } from '../../utils';
+import { formatTimeLoggedHoursForDisplay } from '../../utils/progressDashboardTransform';
 
 type PieRow = {
   category: ChartWorkloadCategory;
@@ -19,6 +21,24 @@ interface WeekBalanceChartProps {
 }
 
 export const WeekBalanceChart = ({ data }: WeekBalanceChartProps) => {
+  const rechartsSlotRef = useRef<HTMLDivElement>(null);
+  const [slotHasSize, setSlotHasSize] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = rechartsSlotRef.current;
+    if (!el) return;
+    const run = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      setSlotHasSize(w > 0 && h > 0);
+    };
+    run();
+    const ro = new ResizeObserver(run);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const valueUnit = data[0]?.valueUnit ?? 'hours';
   const total = data.reduce((s, d) => s + d.hours, 0);
 
   const chartData: PieRow[] = data
@@ -32,8 +52,17 @@ export const WeekBalanceChart = ({ data }: WeekBalanceChartProps) => {
 
   const label =
     total > 0
-      ? `Распределение ${total} ч по категориям за неделю`
+      ? valueUnit === 'tasks'
+        ? `Распределение ${total} ${pluralRuTasks(total)} по категориям за неделю`
+        : `Распределение ${formatTimeLoggedHoursForDisplay(total)} ч по категориям за неделю`
       : 'Нет данных по балансу недели';
+
+  const centerTotal =
+    total > 0
+      ? valueUnit === 'tasks'
+        ? String(total)
+        : formatTimeLoggedHoursForDisplay(total)
+      : '—';
 
   return (
     <div className="balance-chart" role="img" aria-label={label}>
@@ -50,43 +79,50 @@ export const WeekBalanceChart = ({ data }: WeekBalanceChartProps) => {
           />
         </svg>
       ) : (
-        <div className="balance-chart__recharts">
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-            minWidth={160}
-            minHeight={160}
-            initialDimension={{ width: 280, height: 280 }}
-          >
-            <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
-              <Pie
-                data={chartData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                innerRadius="52%"
-                outerRadius="82%"
-                paddingAngle={2}
-                stroke="var(--surface-inset)"
-                strokeWidth={2}
-                isAnimationActive
-              >
-                {chartData.map((row) => (
-                  <Cell key={row.category} fill={row.fill} />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(value, name) => [`${Number(value)} ч`, String(name)]}
-                contentStyle={{ ...RECHARTS_NUNITO_TOOLTIP_STYLE }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+        <div className="balance-chart__recharts" ref={rechartsSlotRef}>
+          {slotHasSize && (
+            <ResponsiveContainer
+              width="100%"
+              height="100%"
+              minWidth={160}
+              minHeight={160}
+              initialDimension={{ width: 280, height: 280 }}
+            >
+              <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+                <Pie
+                  data={chartData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius="52%"
+                  outerRadius="82%"
+                  paddingAngle={2}
+                  stroke="var(--surface-inset)"
+                  strokeWidth={2}
+                  isAnimationActive
+                >
+                  {chartData.map((row) => (
+                    <Cell key={row.category} fill={row.fill} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value, name) => {
+                    const v = Number(value);
+                    const line =
+                      valueUnit === 'tasks' ? `${v} ${pluralRuTasks(v)}` : `${formatTimeLoggedHoursForDisplay(v)} ч`;
+                    return [line, String(name)];
+                  }}
+                  contentStyle={{ ...RECHARTS_NUNITO_TOOLTIP_STYLE }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </div>
       )}
       <div className="balance-chart__center" aria-hidden="true">
-        <span className="balance-chart__total">{total > 0 ? total : '—'}</span>
-        <span className="balance-chart__unit">часов</span>
+        <span className="balance-chart__total">{centerTotal}</span>
+        <span className="balance-chart__unit">{valueUnit === 'tasks' ? 'выполнено' : 'часов'}</span>
       </div>
     </div>
   );

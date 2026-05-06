@@ -12,6 +12,39 @@
   min-height: 0;
   display: flex;
 
+  &--loading {
+    min-height: 28rem;
+  }
+
+  &__spinner {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 4.8rem;
+    height: 4.8rem;
+    border-radius: 50%;
+    border: 0.6rem solid var(--accent-light);
+    border-top-color: var(--accent-dark);
+    animation: account-card-spinner 0.8s linear infinite;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  &__error {
+    margin: 0 0 2rem;
+    font-size: 2rem;
+    color: #c0392b;
+    flex: 1;
+  }
+
+  &__empty {
+    margin: 0 0 2rem;
+    font-size: 2rem;
+    color: var(--accent-dark);
+    opacity: 0.85;
+    flex: 1;
+  }
+
   &__inner-shadow {
     position: absolute;
     inset: 0;
@@ -110,7 +143,7 @@
 
 .account-role {
   width: fit-content;
-  max-width: 100%;
+  max-width: 28rem;
   background: var(--surface-inset);
   border-radius: 10rem;
   box-shadow: var(--shadow-sm);
@@ -118,9 +151,9 @@
   font-size: 2rem;
   font-weight: 500;
   color: var(--accent-dark);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.35;
 }
 
 // =====================================================
@@ -199,7 +232,7 @@
       background-position: center;
       background-size: contain;
       opacity: 0.9;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%234a5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3l18 18'/%3E%3Cpath d='M10.6 10.6a2 2 0 0 0 2.8 2.8'/%3E%3Cpath d='M9.88 5.08A10.94 10.94 0 0 1 12 5c6 0 10 7 10 7a18.28 18.28 0 0 1-4.31 5.07'/%3E%3Cpath d='M6.61 6.61C3.29 8.77 2 12 2 12s4 7 10 7a9.74 9.74 0 0 0 3.39-.61'/%3E%3C/g%3E%3C/svg%3E");
+      background-image: url('../../assets/icons/readonly-icon.svg');
     }
   }
 }
@@ -209,20 +242,20 @@
 // =====================================================
 .account-actions {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: auto;
+  gap: 2rem;
   padding-top: 1rem;
   width: 100%;
-
-  @media (max-width: 1100px) {
-    flex-direction: column;
-    align-items: stretch;
-  }
 }
 
 .btn--action {
-  width: 50rem;
+  margin: 0;
+  box-sizing: border-box;
+  flex: 0 1 50rem;
+  min-width: 0;
   height: 6rem;
   background: var(--surface-inset);
   border-radius: 2rem;
@@ -242,4 +275,9 @@
 
   &:hover { box-shadow: var(--shadow-lg); }
   &:active { box-shadow: var(--shadow-inner); }
+}
+
+@keyframes account-card-spinner {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }

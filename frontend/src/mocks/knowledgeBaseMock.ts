@@ -1,31 +1,19 @@
 /** Моковые данные «Базы знаний». Используются до появления API. */
 
 import imagePlaceholder from '../assets/icons/image-placeholder.svg';
+import type { KBItemResponse, QuickLinkResponse } from '../types/knowledgeBaseApi';
+import { ItemType } from '../types/knowledgeBaseApi';
+import type { KbFileLocation, KbKnowledgeNode } from '../utils/knowledgeBaseTree';
+import { kbQuickLinkIdFor, kbSeedUuid } from '../utils/kbUuid';
 
 /** Положение узла в дереве: родители до текущей папки/файла (без самого узла). */
-export interface KnowledgeFileLocation {
-  /** Цепочка id папок от корня до прямого родителя. */
-  parentFolderIds: string[];
-  /** Названия тех же папок для подписей UI и восстановления. */
-  pathLabels: string[];
-}
+export type KnowledgeFileLocation = KbFileLocation;
 
-export interface KnowledgeFile {
-  id: string;
-  type: 'file';
-  name: string;
-  location: KnowledgeFileLocation;
-}
+export type KnowledgeNode = KbKnowledgeNode;
 
-export interface KnowledgeFolder {
-  id: string;
-  type: 'folder';
-  name: string;
-  location: KnowledgeFileLocation;
-  children: KnowledgeNode[];
-}
+export type KnowledgeFile = Extract<KbKnowledgeNode, { type: 'file' }>;
 
-export type KnowledgeNode = KnowledgeFolder | KnowledgeFile;
+export type KnowledgeFolder = Extract<KbKnowledgeNode, { type: 'folder' }>;
 
 /** Узел дерева из JSON до вычисления `location` у файлов. */
 type RawFile = { id: string; type: 'file'; name: string };
@@ -380,6 +368,10 @@ export interface KnowledgeArchiveItem {
   storedFolderSubtree?: KnowledgeFolder;
   restoreParentFolderIds?: string[];
   restorePathLabels?: string[];
+  /** Корень записи в плоской модели API (моки и синхронизация с бэком). */
+  rootKbId?: string;
+  /** Если false — снять восстановление (режим реального API без soft-archive). */
+  canRestore?: boolean;
 }
 
 export const mockKnowledgeArchive: KnowledgeArchiveItem[] = [
@@ -817,3 +809,132 @@ export const mockKnowledgeFileContents: Record<string, string> = {
 /** Возвращает HTML-контент для файла или дефолтный шаблон, если контент не задан. */
 export const getKnowledgeFileContent = (id: string): string =>
   mockKnowledgeFileContents[id] ?? DEFAULT_FILE_CONTENT;
+
+// ─── Плоские моки в формате ответов API (как GET /api/Kb/tree) ─────────────
+
+function kbMockStableItemId(legacyKey: string): string {
+  return kbSeedUuid(`kb:${legacyKey}`);
+}
+
+function rawNodesToKbFlat(nodes: RawNode[], parentLegacy: string | null, out: KBItemResponse[]): void {
+  for (const n of nodes) {
+    const id = kbMockStableItemId(n.id);
+    const parentId = parentLegacy == null ? null : kbMockStableItemId(parentLegacy);
+    if (n.type === 'file') {
+      const html = mockKnowledgeFileContents[n.id] ?? DEFAULT_FILE_CONTENT.trim();
+      out.push({
+        id,
+        parentId,
+        type: ItemType.Article,
+        title: n.name,
+        content: html,
+      });
+    } else {
+      out.push({
+        id,
+        parentId,
+        type: ItemType.Folder,
+        title: n.name,
+        content: null,
+      });
+      rawNodesToKbFlat(n.children, n.id, out);
+    }
+  }
+}
+
+function knowledgeFolderToKbFlat(folder: KnowledgeFolder, parentKbUuid: string | null): KBItemResponse[] {
+  const id = kbMockStableItemId(folder.id);
+  const out: KBItemResponse[] = [
+    {
+      id,
+      parentId: parentKbUuid,
+      type: ItemType.Folder,
+      title: folder.name,
+      content: null,
+    },
+  ];
+  for (const ch of folder.children) {
+    if (ch.type === 'file') {
+      const html = mockKnowledgeFileContents[ch.id] ?? DEFAULT_FILE_CONTENT.trim();
+      out.push({
+        id: kbMockStableItemId(ch.id),
+        parentId: id,
+        type: ItemType.Article,
+        title: ch.name,
+        content: html,
+      });
+    } else {
+      out.push(...knowledgeFolderToKbFlat(ch, id));
+    }
+  }
+  return out;
+}
+
+function mergeKbItemsById(lists: KBItemResponse[][]): KBItemResponse[] {
+  const map = new Map<string, KBItemResponse>();
+  for (const list of lists) {
+    for (const it of list) map.set(it.id, it);
+  }
+  return [...map.values()];
+}
+
+/** Активное дерево: тот же набор, что и `mockKnowledgeTree`, в виде плоских DTO. */
+export function getMockActiveKbItems(): KBItemResponse[] {
+  const out: KBItemResponse[] = [];
+  rawNodesToKbFlat(RAW_MOCK_KNOWLEDGE_TREE, null, out);
+  return out;
+}
+
+/** Архив: объединение записей из `mockKnowledgeArchive` в формате KBItemResponse. */
+export function getMockArchivedKbItems(): KBItemResponse[] {
+  const lists: KBItemResponse[][] = [];
+  for (const entry of mockKnowledgeArchive) {
+    if (entry.kind === 'file' && entry.originalFileId) {
+      const p = entry.restoreParentFolderIds;
+      const parentLegacy = p?.length ? p[p.length - 1]! : null;
+      lists.push([
+        {
+          id: kbMockStableItemId(entry.originalFileId),
+          parentId: parentLegacy ? kbMockStableItemId(parentLegacy) : null,
+          type: ItemType.Article,
+          title: entry.name,
+          content:
+            mockKnowledgeFileContents[entry.originalFileId] ?? DEFAULT_FILE_CONTENT.trim(),
+        },
+      ]);
+    } else if (entry.kind === 'folder' && entry.storedFolderSubtree) {
+      const p = entry.restoreParentFolderIds;
+      const parentLegacy = p?.length ? p[p.length - 1]! : null;
+      lists.push(
+        knowledgeFolderToKbFlat(
+          entry.storedFolderSubtree,
+          parentLegacy ? kbMockStableItemId(parentLegacy) : null,
+        ),
+      );
+    }
+  }
+  return mergeKbItemsById(lists);
+}
+
+/** Набор legacy-id файлов для стартовых закладок (как раньше DEFAULT_BOOKMARK_IDS). */
+export const MOCK_DEFAULT_BOOKMARK_LEGACY_FILE_IDS = [
+  'file-1-1-1',
+  'file-1-1-3',
+  'file-1-3',
+  'file-2-1',
+  'file-3-1',
+  'file-3-2',
+  'file-4-1-1',
+  'file-5-1',
+] as const;
+
+/** Быстрые ссылки в формате GET /api/QuickLink/user/... */
+export function getMockQuickLinksForUser(userId: string | null): QuickLinkResponse[] {
+  return MOCK_DEFAULT_BOOKMARK_LEGACY_FILE_IDS.map((legacy) => ({
+    id: kbQuickLinkIdFor(legacy),
+    userId,
+    kbItemId: kbMockStableItemId(legacy),
+  }));
+}
+
+export { kbMockStableItemId };

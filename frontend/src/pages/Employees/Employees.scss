@@ -1,0 +1,387 @@
+// Список сотрудников и экран статистики — полноэкранный main-content (Figma main-content 581:3947)
+
+.employees-page.main-content,
+.employees-statistics.main-content {
+  flex: 1;
+  min-height: 0;
+}
+
+.employees-statistics--boot .employees-statistics__boot-surface {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.employees-statistics--boot .employees-page__spinner {
+  position: relative;
+  inset: unset;
+}
+
+.employees-statistics__banner-error {
+  margin-bottom: 0;
+  padding: 1.2rem 1.6rem;
+  border-radius: 1.6rem;
+  font-size: 1.5rem;
+  color: var(--danger);
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-inner);
+  flex-shrink: 0;
+}
+
+.employees-page__surface {
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-lg);
+  padding: 3rem;
+  /* Не режем по краям тени контента и списков (overflow-y на дочках даёт свой скролл). */
+  overflow: visible;
+}
+
+.employees-page__header {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  flex-shrink: 0;
+}
+
+.employees-page__title {
+  flex: 1;
+  font-size: 3.6rem;
+  font-weight: 500;
+  color: var(--accent-dark);
+  margin: 0;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.employees-page__search {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  width: 38rem;
+  height: 5rem;
+  padding: 0 2rem;
+  border-radius: 2rem;
+  background: #fff;
+  box-shadow: var(--shadow-inner);
+  flex-shrink: 0;
+
+  &-icon {
+    width: 3rem;
+    height: 3rem;
+    flex-shrink: 0;
+    transform: scaleX(-1);
+  }
+
+  &-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 2.4rem;
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--accent-dark);
+    min-width: 0;
+
+    &::placeholder {
+      color: #b8b8b8;
+    }
+
+    &:focus {
+      outline: none;
+    }
+  }
+}
+
+.employees-page__list-sheet {
+  flex: 1 1 0;
+  min-height: 0;
+  align-self: stretch;
+  width: 100%;
+  margin-top: 3rem;
+  padding: 0;
+  border-radius: 2rem;
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-inner-lg);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.employees-page__spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 4.8rem;
+  height: 4.8rem;
+  border-radius: 50%;
+  border: 0.6rem solid var(--accent-light);
+  border-top-color: var(--accent-dark);
+  animation: employees-page-spinner-rotate 0.8s linear infinite;
+  opacity: 0.65;
+  z-index: 2;
+}
+
+@keyframes employees-page-spinner-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.employees-page__empty {
+  flex: 1;
+  min-height: 24rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--accent-light);
+  text-align: center;
+  padding: 3rem;
+
+  &-icon {
+    font-size: 3.6rem;
+    line-height: 1;
+    opacity: 0.55;
+  }
+}
+
+.employees-page__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  /* Как list-container в Figma (581:1648): колонка, gap 20px; отступ 30px от краёв viewport —
+     перенесён сюда, у list-sheet паддинга нет (581:1647). Запас для тени карточек. */
+  padding: 3rem;
+  scrollbar-width: thin;
+}
+
+// Карточка в списке — ссылка
+a.employees-card {
+  display: flex;
+}
+
+.employees-card {
+  align-items: center;
+  gap: 3rem;
+  width: 100%;
+  min-height: 14rem;
+  padding: 2rem;
+  border: none;
+  border-radius: 2rem;
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
+  box-sizing: border-box;
+  transition: box-shadow 0.2s ease;
+
+  &:visited {
+    color: inherit;
+  }
+
+  &:hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  &:active {
+    box-shadow: var(--shadow-inner);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-lg);
+  }
+
+  &:focus-visible:active {
+    box-shadow: var(--shadow-inner);
+  }
+}
+
+.employees-card__avatar-wrap {
+  width: 10rem;
+  height: 10rem;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-day);
+}
+
+.employees-card__avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.employees-card__meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.employees-card__name {
+  font-size: 2.4rem;
+  font-weight: 600;
+  color: var(--accent-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.employees-card__role {
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--accent-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.employees-card__email {
+  font-size: 1.7rem;
+  font-weight: 500;
+  color: var(--accent-light);
+  opacity: 0.88;
+  word-break: break-all;
+}
+
+/* ─── Экран статистики сотрудника (каркас как у DashboardTabsPage: main + блок ширины task-panel сбоку) ─── */
+
+/** Правая колонка на вкладке «Календарь»: подробности задачи + карточка сотрудника (как в дашборде). */
+.employees-statistics__calendar-rail {
+  width: 58rem;
+  flex-shrink: 0;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+
+  .task-details {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+  }
+}
+
+.task-panel.employees-statistics__rail {
+  .task-widget {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .employees-info-widget {
+    flex-shrink: 0;
+  }
+}
+
+.employees-info-widget {
+  background: var(--surface-inset);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-sm);
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  flex-shrink: 0;
+}
+
+.employees-info-widget__caption {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--accent-dark);
+}
+
+.employees-info-widget__profile {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.employees-info-widget__avatar-wrap {
+  width: 10rem;
+  height: 10rem;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-day);
+}
+
+.employees-info-widget__avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.employees-info-widget__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.employees-info-widget__name {
+  font-size: 2.4rem;
+  font-weight: 600;
+  color: var(--accent-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.employees-info-widget__position {
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--accent-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.employees-info-widget__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+  height: 5.3rem;
+  border: none;
+  border-radius: 2rem;
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-sm);
+  font-size: 2.4rem;
+  font-weight: 600;
+  color: var(--accent-light);
+  font-family: inherit;
+  cursor: pointer;
+
+  &-icon {
+    width: 2.6rem;
+    height: 2rem;
+    transform: rotate(90deg);
+  }
+
+  &:hover {
+    box-shadow: var(--shadow-lg);
+  }
+}
