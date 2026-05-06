@@ -8,7 +8,7 @@ import './AddTaskModal.scss';
 
 interface AddTaskModalProps {
   onClose: () => void;
-  onAdd: (task: TaskListItem) => void;
+  onAdd: (task: TaskListItem) => void | Promise<void>;
 }
 
 export const AddTaskModal = ({ onClose, onAdd }: AddTaskModalProps) => {
@@ -23,16 +23,22 @@ export const AddTaskModal = ({ onClose, onAdd }: AddTaskModalProps) => {
 
   const canSave = name.trim().length > 0;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!canSave) return;
-    onAdd({
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      description: description.trim(),
-      taskType: taskType ?? TASK_TYPES[0],
-      progress: labelToProgressNumber(taskProgress ?? TASK_PROGRESS[0]),
-    });
-    onClose();
+    try {
+      await Promise.resolve(
+        onAdd({
+          id: crypto.randomUUID(),
+          name: name.trim(),
+          description: description.trim(),
+          taskType: taskType ?? TASK_TYPES[0],
+          progress: labelToProgressNumber(taskProgress ?? TASK_PROGRESS[0]),
+        }),
+      );
+      onClose();
+    } catch {
+      /* ошибка обработана снаружи; модалку не закрываем */
+    }
   };
 
   return (

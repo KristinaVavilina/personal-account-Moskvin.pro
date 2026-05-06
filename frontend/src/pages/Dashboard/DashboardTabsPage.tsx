@@ -44,6 +44,15 @@ export const DashboardTabsPage = () => {
     }
   }, []);
 
+  const refreshTaskListOnly = useCallback(async () => {
+    try {
+      const list = await fetchActiveTasksForDashboard();
+      setTaskWidgetItems(list);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -132,6 +141,7 @@ export const DashboardTabsPage = () => {
             tasks={taskWidgetItems}
             isLoading={tasksLoading}
             initialArchivedEmpty
+            onTaskListRefresh={refreshTaskListOnly}
             actionButtonLabel={
               activeTab === 'reporting' ? TASK_PANEL_ACTION_REPORT : TASK_PANEL_ACTION_ARCHIVE
             }

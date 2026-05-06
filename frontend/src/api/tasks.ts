@@ -100,3 +100,40 @@ export async function fetchCompletedTasksCountForMonth(
   if (typeof n !== 'number' || !Number.isFinite(n)) return 0;
   return Math.max(0, Math.floor(n));
 }
+
+/** Тело POST/PUT Task (как `TaskRequest` на бэке). */
+export interface ApiTaskWriteRequest {
+  userId: string;
+  typeId?: string | null;
+  title: string;
+  description?: string | null;
+  currentProgress: number;
+}
+
+export async function fetchTaskById(taskId: string): Promise<ApiTaskResponse> {
+  const res = await fetch(`/api/Task/${encodeURIComponent(taskId)}`);
+  return readJson<ApiTaskResponse>(res);
+}
+
+export async function createTask(body: ApiTaskWriteRequest): Promise<string> {
+  const res = await fetch('/api/Task', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return readJson<string>(res);
+}
+
+export async function updateTask(taskId: string, body: ApiTaskWriteRequest): Promise<void> {
+  const res = await fetch(`/api/Task/${encodeURIComponent(taskId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  await readJson<string>(res);
+}
+
+export async function deleteTask(taskId: string): Promise<void> {
+  const res = await fetch(`/api/Task/${encodeURIComponent(taskId)}`, { method: 'DELETE' });
+  await readJson<string>(res);
+}

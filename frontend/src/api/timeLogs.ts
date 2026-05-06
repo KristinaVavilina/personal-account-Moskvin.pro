@@ -66,3 +66,55 @@ export async function fetchTimeLogsForCurrentMonth(): Promise<ApiTimeLogRow[]> {
   const { start, end } = monthBoundsIso(d.getFullYear(), d.getMonth());
   return fetchTimeLogsForDateRange(start, end);
 }
+
+export interface ApiTimeLogWriteRequest {
+  taskId: string;
+  userId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  progressSnapshot?: number | null;
+  comment?: string | null;
+}
+
+export async function fetchTimeLogTaskIdsForRange(
+  userId: string,
+  startDate: string,
+  endDate: string,
+): Promise<string[]> {
+  const qs = new URLSearchParams({ startDate, endDate });
+  const res = await fetch(
+    `/api/TimeLog/user/${encodeURIComponent(userId)}/tasks?${qs}`,
+  );
+  const raw = await readJson<unknown>(res);
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((x): x is string => typeof x === 'string');
+}
+
+export async function fetchTimeLogById(id: string): Promise<ApiTimeLogRow> {
+  const res = await fetch(`/api/TimeLog/${encodeURIComponent(id)}`);
+  return readJson<ApiTimeLogRow>(res);
+}
+
+export async function createTimeLog(body: ApiTimeLogWriteRequest): Promise<string> {
+  const res = await fetch('/api/TimeLog', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return readJson<string>(res);
+}
+
+export async function updateTimeLog(id: string, body: ApiTimeLogWriteRequest): Promise<void> {
+  const res = await fetch(`/api/TimeLog/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  await readJson<string>(res);
+}
+
+export async function deleteTimeLog(id: string): Promise<void> {
+  const res = await fetch(`/api/TimeLog/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  await readJson<string>(res);
+}
