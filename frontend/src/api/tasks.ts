@@ -1,4 +1,9 @@
 import type { TaskListItem } from '../components/layout/taskListTypes';
+import { USE_PROGRESS_MOCK } from '../config/progressSource';
+import {
+  getMockUserTasksApi,
+  mockCompletedTasksCountForCalendarMonth,
+} from '../mocks/progressDashboardMock';
 import { resolveDevUserId } from './devUser';
 import { readJson } from './http';
 import { monthBoundsIso } from './timeLogs';
@@ -12,11 +17,15 @@ export interface ApiTaskResponse {
   title: string;
   description?: string | null;
   currentProgress: number | string;
+  /** Когда бэкенд начнёт отдавать даты в TaskResponse — календарь подхватит без доработок. */
+  createdAt?: string;
+  archivedAt?: string;
+  isArchived?: boolean;
 }
 
 const PROGRESS_STEPS = [0, 20, 40, 60, 70, 90, 100] as const;
 
-function normalizeProgress(raw: number | string): number {
+export function normalizeTaskProgress(raw: number | string): number {
   const n = typeof raw === 'string' ? parseInt(raw, 10) : raw;
   if (!Number.isFinite(n)) return 0;
   const allowed = PROGRESS_STEPS as readonly number[];
@@ -28,10 +37,30 @@ export function apiTaskToListItem(t: ApiTaskResponse): TaskListItem {
   return {
     id: t.id,
     name: t.title,
-    progress: normalizeProgress(t.currentProgress),
+    progress: normalizeTaskProgress(t.currentProgress),
     description: t.description ?? '',
     taskType: apiTypeNameToTaskTypeLabel(t.typeName),
   };
+}
+
+/**
+ * GET /api/Task/user/{userId}?isArchived
+ * Сырые объекты задач (для маппинга типов к графикам «Прогресс»).
+ */
+export async function fetchUserTasksRaw(
+  userId: string,
+  isArchived: boolean,
+): Promise<ApiTaskResponse[]> {
+  if (USE_PROGRESS_MOCK) {
+    return getMockUserTasksApi(userId, isArchived);
+  }
+  const tasksRes = await fetch(
+    `/api/Task/user/${encodeURIComponent(userId)}?${new URLSearchParams({
+      isArchived: String(isArchived),
+    })}`,
+  );
+  const raw = await readJson<ApiTaskResponse[]>(tasksRes);
+  return Array.isArray(raw) ? raw : [];
 }
 
 /**
@@ -42,11 +71,7 @@ export async function fetchActiveTasksForDashboard(): Promise<TaskListItem[]> {
   const userId = await resolveDevUserId();
   if (!userId) return [];
 
-  const tasksRes = await fetch(
-    `/api/Task/user/${encodeURIComponent(userId)}?${new URLSearchParams({ isArchived: 'false' })}`,
-  );
-  const raw = await readJson<ApiTaskResponse[]>(tasksRes);
-  if (!Array.isArray(raw)) return [];
+  const raw = await fetchUserTasksRaw(userId, false);
   return raw.map(apiTaskToListItem);
 }
 
@@ -58,6 +83,11 @@ export async function fetchCompletedTasksCountForMonth(
   year: number,
   monthIndex0: number,
 ): Promise<number> {
+  if (USE_PROGRESS_MOCK) {
+    const userId = await resolveDevUserId();
+    if (!userId) return 0;
+    return mockCompletedTasksCountForCalendarMonth(userId, year, monthIndex0);
+  }
   const userId = await resolveDevUserId();
   if (!userId) return 0;
 

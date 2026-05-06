@@ -138,14 +138,27 @@
   justify-content: space-between;
   gap: 20rem;
   position: relative;
-  cursor: pointer;
   transition: box-shadow 0.2s ease;
 
-  &:hover {
-    box-shadow: -0.5rem -0.5rem 1rem 0 #ffffff, 0.8rem 0.8rem 1.5rem 0 #aabcdd;
+  &--editable,
+  &--preview {
+    cursor: pointer;
+
+    &:hover {
+      box-shadow: -0.5rem -0.5rem 1rem 0 #ffffff, 0.8rem 0.8rem 1.5rem 0 #aabcdd;
+    }
   }
 
-  &:active {
+  &--readonly {
+    cursor: default;
+
+    &:hover {
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  &--editable:active,
+  &--preview:active {
     box-shadow: none;
 
     &::after {

@@ -42,8 +42,10 @@ export const Sidebar = () => {
           <img src={knowledgeBaseIcon} alt="База знаний" />
         </NavLink>
         <NavLink
-          to="#"
-          className="sidebar__item"
+          to={ROUTE.EMPLOYEES}
+          className={({ isActive }) =>
+            'sidebar__item' + (isActive ? ' sidebar__item--active' : '')
+          }
           aria-label="Сотрудники"
         >
           <img src={employeesIcon} alt="Сотрудники" />

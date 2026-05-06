@@ -15,7 +15,8 @@ export type TaskPanelTasksAction =
   | { type: 'DELETE_TO_ARCHIVE'; id: string }
   | { type: 'RESTORE_FROM_ARCHIVE'; id: string }
   | { type: 'ADD_TASK'; task: TaskListItem }
-  | { type: 'UPDATE_TASK'; task: TaskListItem };
+  | { type: 'UPDATE_TASK'; task: TaskListItem }
+  | { type: 'UPDATE_ARCHIVED_TASK'; task: TaskListItem };
 
 export function normalizeTaskListItem(t: TaskListItem): TaskListItem {
   return {
@@ -38,16 +39,37 @@ export function createInitialTaskPanelState(
   };
 }
 
+function archiveCompletedTaskEntry(
+  state: TaskPanelTasksState,
+  task: TaskListItem,
+  originalIndex: number,
+): TaskPanelTasksState {
+  const normalized = normalizeTaskListItem(task);
+  if (state.archivedList.some((a) => a.task.id === normalized.id)) return state;
+  return {
+    taskList: state.taskList.filter((t) => t.id !== normalized.id),
+    archivedList: [
+      { task: normalized, originalIndex, daysLeft: ARCHIVE_RETENTION_DAYS },
+      ...state.archivedList,
+    ],
+  };
+}
+
 export function taskPanelTasksReducer(
   state: TaskPanelTasksState,
   action: TaskPanelTasksAction,
 ): TaskPanelTasksState {
   switch (action.type) {
-    case 'SYNC_TASKS':
+    case 'SYNC_TASKS': {
+      const archivedIds = new Set(state.archivedList.map((a) => a.task.id));
+      const taskList = action.tasks
+        .map(normalizeTaskListItem)
+        .filter((t) => !archivedIds.has(t.id));
       return {
         ...state,
-        taskList: action.tasks.map(normalizeTaskListItem),
+        taskList,
       };
+    }
 
     case 'DELETE_TO_ARCHIVE': {
       const idx = state.taskList.findIndex((t) => t.id === action.id);
@@ -75,20 +97,38 @@ export function taskPanelTasksReducer(
       };
     }
 
-    case 'ADD_TASK':
+    case 'ADD_TASK': {
+      const next = normalizeTaskListItem(action.task);
+      if (next.progress === 100) {
+        return archiveCompletedTaskEntry(state, next, state.taskList.length);
+      }
       return {
         ...state,
-        taskList: [...state.taskList, normalizeTaskListItem(action.task)],
+        taskList: [...state.taskList, next],
       };
+    }
 
-    case 'UPDATE_TASK':
-      return {
-        ...state,
-        taskList: state.taskList.map((t) =>
-          t.id === action.task.id ? normalizeTaskListItem(action.task) : t,
-        ),
-      };
+    case 'UPDATE_TASK': {
+      const next = normalizeTaskListItem(action.task);
+      if (next.progress !== 100) {
+        return {
+          ...state,
+          taskList: state.taskList.map((t) => (t.id === next.id ? next : t)),
+        };
+      }
+      const idx = state.taskList.findIndex((t) => t.id === next.id);
+      if (idx === -1) return state;
+      return archiveCompletedTaskEntry(state, next, idx);
+    }
 
+    case 'UPDATE_ARCHIVED_TASK': {
+      const next = normalizeTaskListItem(action.task);
+      const idx = state.archivedList.findIndex((a) => a.task.id === next.id);
+      if (idx === -1) return state;
+      const nextArchived = [...state.archivedList];
+      nextArchived[idx] = { ...nextArchived[idx], task: next };
+      return { ...state, archivedList: nextArchived };
+    }
     default:
       return state;
   }

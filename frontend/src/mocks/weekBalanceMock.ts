@@ -1,10 +1,12 @@
-/** Доли времени по категориям за неделю (часы) — для виджета «Баланс недели» */
+/** Виджет «Баланс недели»: часы из таймлогов (`valueUnit` по умолчанию) или число заданий (`tasks`). */
 
 export type WeekBalanceCategory = 'task' | 'discussion' | 'other' | 'education' | 'routine';
 
 export interface WeekBalanceEntry {
   category: WeekBalanceCategory;
+  /** Для `tasks` — счётчик заданий; иначе часы. */
   hours: number;
+  valueUnit?: 'hours' | 'tasks';
 }
 
 export const mockWeekBalance: WeekBalanceEntry[] = [

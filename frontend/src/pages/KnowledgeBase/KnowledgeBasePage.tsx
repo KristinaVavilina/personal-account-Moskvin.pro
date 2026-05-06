@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
@@ -23,21 +23,36 @@ import restoreArrowIcon from '../../assets/icons/restore-arrow-icon.svg';
 import trashButtonIcon from '../../assets/icons/trash-button-icon.svg';
 import {
   collectFileIdsInSubtree,
-  getKnowledgeFileContent,
-  insertFileIntoTree,
-  insertFolderIntoTree,
-  mockKnowledgeArchive,
-  mockKnowledgeTree,
-  removeFileFromTree,
-  removeFolderFromTree,
-  treeContainsFileId,
-  treeContainsFolderId,
+  DEFAULT_FILE_CONTENT,
+  getMockActiveKbItems,
+  getMockArchivedKbItems,
+  getMockQuickLinksForUser,
   type KnowledgeArchiveItem,
   type KnowledgeFile,
-  type KnowledgeFileLocation,
   type KnowledgeFolder,
   type KnowledgeNode,
 } from '../../mocks/knowledgeBaseMock';
+import {
+  createKb,
+  createQuickLink,
+  deleteKb,
+  deleteQuickLink,
+  fetchKbById,
+  fetchKbTree,
+  updateKb,
+  fetchQuickLinksAll,
+  fetchQuickLinksByUser,
+} from '../../api/knowledgeBase';
+import { resolveDevUserId } from '../../api/devUser';
+import { USE_KNOWLEDGE_BASE_MOCK } from '../../config/knowledgeBaseSource';
+import type { KBItemRequest, KBItemResponse } from '../../types/knowledgeBaseApi';
+import { ItemType } from '../../types/knowledgeBaseApi';
+import {
+  kbCollectSubtreeIds,
+  kbFlatToTree,
+  kbRemoveSubtree,
+} from '../../utils/knowledgeBaseTree';
+import { kbArchivedFlatToArchiveRows } from './knowledgeBaseArchiveRows';
 import { cn } from '../../utils';
 import './KnowledgeBase.scss';
 
@@ -70,71 +85,6 @@ function filterTree(nodes: KnowledgeNode[], query: string): KnowledgeNode[] {
     }
   }
   return result;
-}
-
-/** Согласует `location` у всех узлов с актуальными именами в дереве. */
-function recomputeTreeLocations(
-  nodes: KnowledgeNode[],
-  ancestorIds: string[] = [],
-  ancestorLabels: string[] = [],
-): KnowledgeNode[] {
-  return nodes.map((node) => {
-    if (node.type === 'file') {
-      return {
-        ...node,
-        location: {
-          parentFolderIds: [...ancestorIds],
-          pathLabels: [...ancestorLabels],
-        },
-      };
-    }
-    const loc: KnowledgeFileLocation = {
-      parentFolderIds: [...ancestorIds],
-      pathLabels: [...ancestorLabels],
-    };
-    return {
-      ...node,
-      location: loc,
-      children: recomputeTreeLocations(
-        node.children,
-        [...ancestorIds, node.id],
-        [...ancestorLabels, node.name],
-      ),
-    };
-  });
-}
-
-function renameNodeInTree(nodes: KnowledgeNode[], nodeId: string, newName: string): KnowledgeNode[] {
-  return nodes.map((node) => {
-    if (node.id === nodeId) {
-      return { ...node, name: newName };
-    }
-    if (node.type === 'folder') {
-      return { ...node, children: renameNodeInTree(node.children, nodeId, newName) };
-    }
-    return node;
-  });
-}
-
-function addChildUnderFolder(
-  nodes: KnowledgeNode[],
-  parentFolderId: string,
-  child: KnowledgeFile | KnowledgeFolder,
-): KnowledgeNode[] {
-  return nodes.map((node) => {
-    if (node.type === 'file') return node;
-    if (node.id === parentFolderId) {
-      return { ...node, children: [...node.children, child] };
-    }
-    return { ...node, children: addChildUnderFolder(node.children, parentFolderId, child) };
-  });
-}
-
-function childLocationUnderFolder(parent: KnowledgeFolder): KnowledgeFileLocation {
-  return {
-    parentFolderIds: [...parent.location.parentFolderIds, parent.id],
-    pathLabels: [...parent.location.pathLabels, parent.name],
-  };
 }
 
 /** Раскрывает дерево в плоский список файлов с цепочкой родительских папок. */
@@ -223,10 +173,11 @@ export type TreeNodeMenuAction = 'create-folder' | 'create-file' | 'rename' | 'a
 interface TreeNodeRowMenuProps {
   node: KnowledgeNode;
   variant: 'folder' | 'file';
+  archiveMenuLabel: string;
   onAction?: (action: TreeNodeMenuAction, node: KnowledgeNode) => void;
 }
 
-const TreeNodeRowMenu = ({ node, variant, onAction }: TreeNodeRowMenuProps) => (
+const TreeNodeRowMenu = ({ node, variant, archiveMenuLabel, onAction }: TreeNodeRowMenuProps) => (
   <DropdownMenu.Root modal={false}>
     <DropdownMenu.Trigger asChild>
       <button
@@ -269,7 +220,7 @@ const TreeNodeRowMenu = ({ node, variant, onAction }: TreeNodeRowMenuProps) => (
           Переименовать
         </DropdownMenu.Item>
         <DropdownMenu.Item className="kb-tree__menu-item" onSelect={() => onAction?.('archive', node)}>
-          В архив
+          {archiveMenuLabel}
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Portal>
@@ -282,6 +233,7 @@ interface TreeNodeProps {
   expanded: Set<string>;
   selectedId: string | null;
   query: string;
+  archiveMenuLabel: string;
   onToggle: (id: string) => void;
   onOpenFile: (file: KnowledgeFile) => void;
   onTreeMenuAction?: (action: TreeNodeMenuAction, node: KnowledgeNode) => void;
@@ -307,6 +259,7 @@ const TreeNode = ({
   expanded,
   selectedId,
   query,
+  archiveMenuLabel,
   onToggle,
   onOpenFile,
   onTreeMenuAction,
@@ -328,7 +281,12 @@ const TreeNode = ({
           </span>
         </button>
         <div className="kb-tree__row-actions">
-          <TreeNodeRowMenu node={node} variant="file" onAction={onTreeMenuAction} />
+          <TreeNodeRowMenu
+            node={node}
+            variant="file"
+            archiveMenuLabel={archiveMenuLabel}
+            onAction={onTreeMenuAction}
+          />
         </div>
       </div>
     );
@@ -355,7 +313,12 @@ const TreeNode = ({
           </span>
         </button>
         <div className="kb-tree__row-actions">
-          <TreeNodeRowMenu node={node} variant="folder" onAction={onTreeMenuAction} />
+          <TreeNodeRowMenu
+            node={node}
+            variant="folder"
+            archiveMenuLabel={archiveMenuLabel}
+            onAction={onTreeMenuAction}
+          />
         </div>
       </div>
       {isOpen && (
@@ -368,6 +331,7 @@ const TreeNode = ({
               expanded={expanded}
               selectedId={selectedId}
               query={query}
+              archiveMenuLabel={archiveMenuLabel}
               onToggle={onToggle}
               onOpenFile={onOpenFile}
               onTreeMenuAction={onTreeMenuAction}
@@ -456,7 +420,9 @@ const ResultRow = ({ result, query, onOpenFile }: ResultRowProps) => {
 
 interface DocEditorProps {
   file: KnowledgeFile;
+  html: string;
   isBookmarked: boolean;
+  onSave: (html: string) => void | Promise<void>;
   onToggleBookmark: () => void;
   onClose: () => void;
 }
@@ -486,7 +452,7 @@ const ImageWithPaste = Image.extend({
   },
 });
 
-const DocEditor = ({ file, isBookmarked, onToggleBookmark, onClose }: DocEditorProps) => {
+const DocEditor = ({ file, html, isBookmarked, onSave, onToggleBookmark, onClose }: DocEditorProps) => {
   const [isDirty, setIsDirty] = useState(false);
 
   // useEditor пересоздаёт инстанс при смене file.id, поэтому история TipTap
@@ -512,7 +478,7 @@ const DocEditor = ({ file, isBookmarked, onToggleBookmark, onClose }: DocEditorP
           HTMLAttributes: { class: 'kb-editor__image' },
         }),
       ],
-      content: getKnowledgeFileContent(file.id),
+      content: html,
       editorProps: {
         attributes: {
           class: 'kb-editor__content',
@@ -521,12 +487,14 @@ const DocEditor = ({ file, isBookmarked, onToggleBookmark, onClose }: DocEditorP
       },
       onUpdate: () => setIsDirty(true),
     },
-    [file.id],
+    [file.id, html],
   );
 
   useEffect(() => {
+    // Сброс «грязности» при смене документа / подгрузке контента с сервера
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- синхронизация вложенного редактора
     setIsDirty(false);
-  }, [file.id]);
+  }, [file.id, html]);
 
   const handleSetLink = () => {
     if (!editor) return;
@@ -541,8 +509,9 @@ const DocEditor = ({ file, isBookmarked, onToggleBookmark, onClose }: DocEditorP
   };
 
   const handleSave = () => {
-    if (!isDirty) return;
-    setIsDirty(false);
+    if (!isDirty || !editor) return;
+    const next = editor.getHTML();
+    void Promise.resolve(onSave(next)).then(() => setIsDirty(false));
   };
 
   // Команды форматирования вешаем на mousedown и сразу глушим default —
@@ -783,21 +752,25 @@ const ArchiveRow = ({ item, query, onRestore, onDelete }: ArchiveRowProps) => {
       </div>
       <span className="kb-archive-row__meta">
         <span className="kb-archive-row__meta-line">В архиве: {item.archivedAt}</span>
-        <span className="kb-archive-row__meta-line">{formatDeleteIn(item.deleteInDays)}</span>
+        {item.deleteInDays > 0 && (
+          <span className="kb-archive-row__meta-line">{formatDeleteIn(item.deleteInDays)}</span>
+        )}
       </span>
-      <button
-        type="button"
-        className="kb-archive-row__restore"
-        onClick={() => onRestore(item)}
-      >
-        <span>Восстановить</span>
-        <img
-          src={restoreArrowIcon}
-          alt=""
-          aria-hidden="true"
-          className="kb-archive-row__restore-icon"
-        />
-      </button>
+      {item.canRestore !== false && (
+        <button
+          type="button"
+          className="kb-archive-row__restore"
+          aria-label="Восстановить"
+          onClick={() => onRestore(item)}
+        >
+          <img
+            src={restoreArrowIcon}
+            alt=""
+            aria-hidden="true"
+            className="kb-archive-row__restore-icon"
+          />
+        </button>
+      )}
       <button
         type="button"
         className="kb-archive-row__delete"
@@ -817,30 +790,136 @@ const ArchiveRow = ({ item, query, onRestore, onDelete }: ArchiveRowProps) => {
 
 // ─── Страница ────────────────────────────────────────────────────────────────
 
-/** Несколько файлов из дерева, добавленных в закладки по умолчанию. */
-const DEFAULT_BOOKMARK_IDS = [
-  'file-1-1-1',
-  'file-1-1-3',
-  'file-1-3',
-  'file-2-1',
-  'file-3-1',
-  'file-3-2',
-  'file-4-1-1',
-  'file-5-1',
-];
-
 export const KnowledgeBasePage = () => {
+  const treeMenuArchiveLabel = USE_KNOWLEDGE_BASE_MOCK ? 'В архив' : 'Удалить…';
+
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('base');
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['folder-1', 'folder-1-1']));
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const expandInitDone = useRef(false);
+
+  const [activeKbItems, setActiveKbItems] = useState<KBItemResponse[]>([]);
+  const [archivedKbItems, setArchivedKbItems] = useState<KBItemResponse[]>([]);
+  const [bookmarks, setBookmarks] = useState<Set<string>>(() => new Set());
+  const [quickLinkByKbId, setQuickLinkByKbId] = useState<Map<string, string>>(() => new Map());
+  const [apiUserId, setApiUserId] = useState<string | null>(null);
+
   const [openedFile, setOpenedFile] = useState<KnowledgeFile | null>(null);
-  const [knowledgeTree, setKnowledgeTree] = useState<KnowledgeNode[]>(() =>
-    structuredClone(mockKnowledgeTree),
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isKbLoading, setIsKbLoading] = useState(true);
+
+  const knowledgeTree = useMemo(() => kbFlatToTree(activeKbItems), [activeKbItems]);
+
+  const archiveItems = useMemo(
+    () =>
+      kbArchivedFlatToArchiveRows(archivedKbItems, {
+        allowRestore: USE_KNOWLEDGE_BASE_MOCK,
+        archivedAtLabel: '—',
+        deleteInDays: USE_KNOWLEDGE_BASE_MOCK ? 30 : 0,
+      }),
+    [archivedKbItems],
   );
-  const [archiveItems, setArchiveItems] = useState<KnowledgeArchiveItem[]>(mockKnowledgeArchive);
-  const [bookmarks, setBookmarks] = useState<Set<string>>(
-    () => new Set(DEFAULT_BOOKMARK_IDS),
-  );
+
+  const reloadFromApi = useCallback(async () => {
+    if (USE_KNOWLEDGE_BASE_MOCK) return;
+    const [a, ar] = await Promise.all([fetchKbTree(false), fetchKbTree(true)]);
+    setActiveKbItems(a);
+    setArchivedKbItems(ar);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsKbLoading(true);
+    (async () => {
+      setLoadError(null);
+      try {
+        if (USE_KNOWLEDGE_BASE_MOCK) {
+          const active = getMockActiveKbItems();
+          const archived = getMockArchivedKbItems();
+          const uid = import.meta.env.VITE_DEV_USER_ID?.trim() ?? null;
+          const links = getMockQuickLinksForUser(uid);
+          if (cancelled) return;
+          setActiveKbItems(active);
+          setArchivedKbItems(archived);
+          setQuickLinkByKbId(new Map(links.map((l) => [l.kbItemId, l.id])));
+          setBookmarks(new Set(links.map((l) => l.kbItemId)));
+          setApiUserId(uid);
+          return;
+        }
+        const uid = await resolveDevUserId();
+        if (cancelled) return;
+        setApiUserId(uid);
+        const [active, archived, ql] = await Promise.all([
+          fetchKbTree(false),
+          fetchKbTree(true),
+          uid ? fetchQuickLinksByUser(uid) : fetchQuickLinksAll(),
+        ]);
+        if (cancelled) return;
+        setActiveKbItems(active);
+        setArchivedKbItems(archived);
+        const qlFiltered = uid ? ql.filter((l) => l.userId == null || l.userId === uid) : ql;
+        setQuickLinkByKbId(new Map(qlFiltered.map((l) => [l.kbItemId, l.id])));
+        setBookmarks(new Set(qlFiltered.map((l) => l.kbItemId)));
+      } catch (e) {
+        if (!cancelled) {
+          setLoadError(e instanceof Error ? e.message : 'Ошибка загрузки базы знаний');
+        }
+      } finally {
+        if (!cancelled) {
+          setIsKbLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!openedFile || USE_KNOWLEDGE_BASE_MOCK) return;
+    const { id: openId } = openedFile;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const fresh = await fetchKbById(openId);
+        if (cancelled) return;
+        setActiveKbItems((rows) => {
+          const idx = rows.findIndex((r) => r.id === fresh.id);
+          if (idx < 0) return rows;
+          const next = rows.slice();
+          next[idx] = fresh;
+          return next;
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [openedFile]);
+
+  const defaultExpandedIds = useMemo(() => {
+    const ids: string[] = [];
+    const walk = (nodes: KnowledgeNode[]) => {
+      for (const n of nodes) {
+        if (n.type === 'folder') {
+          ids.push(n.id);
+          if (ids.length >= 2) return;
+          walk(n.children);
+          if (ids.length >= 2) return;
+        }
+      }
+    };
+    walk(knowledgeTree);
+    return ids;
+  }, [knowledgeTree]);
+
+  useEffect(() => {
+    if (expandInitDone.current || knowledgeTree.length === 0) return;
+    expandInitDone.current = true;
+    setExpanded(new Set(defaultExpandedIds));
+  }, [knowledgeTree, defaultExpandedIds]);
 
   const filteredTree = useMemo(() => filterTree(knowledgeTree, searchQuery), [knowledgeTree, searchQuery]);
   const searchResults = useMemo(
@@ -849,14 +928,18 @@ export const KnowledgeBasePage = () => {
   );
   const isSearching = searchQuery.trim().length > 0;
 
-  /** Полный плоский список файлов «Базы знаний» для поиска по id. */
   const allFiles = useMemo(() => flattenFiles(knowledgeTree), [knowledgeTree]);
 
-  /** Файлы, добавленные в закладки, в порядке как в дереве. */
-  const bookmarkedFiles = useMemo(
-    () => allFiles.filter(({ file }) => bookmarks.has(file.id)).map(({ file }) => file),
-    [allFiles, bookmarks],
-  );
+  const bookmarkedFiles = useMemo(() => {
+    const seen = new Set<string>();
+    const out: KnowledgeFile[] = [];
+    for (const { file } of allFiles) {
+      if (!bookmarks.has(file.id) || seen.has(file.id)) continue;
+      seen.add(file.id);
+      out.push(file);
+    }
+    return out;
+  }, [allFiles, bookmarks]);
 
   const filteredArchive = useMemo(() => {
     const q = searchQuery.toLocaleLowerCase('ru-RU').trim();
@@ -864,52 +947,111 @@ export const KnowledgeBasePage = () => {
     return archiveItems.filter((it) => it.name.toLocaleLowerCase('ru-RU').includes(q));
   }, [archiveItems, searchQuery]);
 
+  const openedArticle = useMemo(
+    () => (openedFile ? activeKbItems.find((i) => i.id === openedFile.id) : undefined),
+    [openedFile, activeKbItems],
+  );
+
+  const openedFileHtml = openedArticle?.content ?? DEFAULT_FILE_CONTENT.trim();
+
+  const toKbRequest = useCallback((row: KBItemResponse): KBItemRequest => {
+    return {
+      parentId: row.parentId,
+      type: row.type,
+      title: row.title,
+      content: row.type === ItemType.Article ? row.content : null,
+    };
+  }, []);
+
+  const deleteSubtreeRemote = useCallback(async (rootId: string, items: KBItemResponse[]) => {
+    const order = kbCollectSubtreeIds(rootId, items).slice().reverse();
+    for (const id of order) {
+      await deleteKb(id);
+    }
+  }, []);
+
+  const handleSaveArticle = useCallback(
+    async (html: string) => {
+      if (!openedFile) return;
+      const cur = activeKbItems.find((i) => i.id === openedFile.id);
+      if (!cur || cur.type !== ItemType.Article) return;
+      const nextRow: KBItemResponse = { ...cur, content: html };
+      if (USE_KNOWLEDGE_BASE_MOCK) {
+        setActiveKbItems((rows) => rows.map((r) => (r.id === cur.id ? nextRow : r)));
+        return;
+      }
+      try {
+        await updateKb(cur.id, toKbRequest(nextRow));
+        await reloadFromApi();
+      } catch (e) {
+        console.error(e);
+      }
+    },
+    [openedFile, activeKbItems, toKbRequest, reloadFromApi],
+  );
+
   const handleRestore = (item: KnowledgeArchiveItem) => {
-    if (item.kind === 'file') {
-      if (!item.originalFileId || item.restoreParentFolderIds === undefined) return;
-      setKnowledgeTree((tree) => {
-        if (treeContainsFileId(tree, item.originalFileId!)) return tree;
-        return insertFileIntoTree(tree, item.restoreParentFolderIds!, {
-          id: item.originalFileId!,
-          type: 'file',
-          name: item.name,
+    if (!USE_KNOWLEDGE_BASE_MOCK || !item.rootKbId) return;
+    const ids = new Set(kbCollectSubtreeIds(item.rootKbId, archivedKbItems));
+    const toMove = archivedKbItems.filter((i) => ids.has(i.id));
+    setArchivedKbItems((a) => a.filter((i) => !ids.has(i.id)));
+    setActiveKbItems((x) => [...x, ...toMove]);
+  };
+
+  const handleDeleteArchived = async (item: KnowledgeArchiveItem) => {
+    if (!item.rootKbId) return;
+    if (USE_KNOWLEDGE_BASE_MOCK) {
+      setArchivedKbItems((a) => kbRemoveSubtree(a, item.rootKbId!));
+      return;
+    }
+    try {
+      await deleteSubtreeRemote(item.rootKbId, archivedKbItems);
+      await reloadFromApi();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const toggleBookmark = async (id: string) => {
+    if (bookmarks.has(id)) {
+      const ql = quickLinkByKbId.get(id);
+      if (!USE_KNOWLEDGE_BASE_MOCK && ql) {
+        try {
+          await deleteQuickLink(ql);
+        } catch (e) {
+          console.error(e);
+          return;
+        }
+        setQuickLinkByKbId((m) => {
+          const n = new Map(m);
+          n.delete(id);
+          return n;
         });
+      }
+      setBookmarks((prev) => {
+        const n = new Set(prev);
+        n.delete(id);
+        return n;
       });
-      setArchiveItems((prev) => prev.filter((it) => it.id !== item.id));
       return;
     }
-
-    if (item.kind !== 'folder') return;
-
-    if (
-      !item.originalFolderId ||
-      !item.storedFolderSubtree ||
-      item.restoreParentFolderIds === undefined
-    ) {
-      return;
+    if (!USE_KNOWLEDGE_BASE_MOCK) {
+      if (!apiUserId) return;
+      try {
+        const newId = await createQuickLink({ userId: apiUserId, kbItemId: id });
+        setQuickLinkByKbId((m) => new Map(m).set(id, newId));
+      } catch (e) {
+        console.error(e);
+        return;
+      }
     }
-    setKnowledgeTree((tree) => {
-      if (treeContainsFolderId(tree, item.originalFolderId!)) return tree;
-      const subtree = structuredClone(item.storedFolderSubtree) as KnowledgeFolder;
-      return insertFolderIntoTree(tree, item.restoreParentFolderIds!, subtree);
-    });
-    setArchiveItems((prev) => prev.filter((it) => it.id !== item.id));
-  };
-
-  const handleDelete = (item: KnowledgeArchiveItem) => {
-    setArchiveItems((prev) => prev.filter((it) => it.id !== item.id));
-  };
-
-  const toggleBookmark = (id: string) => {
     setBookmarks((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+      const n = new Set(prev);
+      n.add(id);
+      return n;
     });
   };
 
-  // При поиске разворачиваем все папки отфильтрованного дерева, чтобы совпадения были видны.
   const effectiveExpanded = useMemo(() => {
     if (!isSearching) return expanded;
     const ids = new Set(expanded);
@@ -927,10 +1069,10 @@ export const KnowledgeBasePage = () => {
 
   const handleToggle = (id: string) => {
     setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
     });
   };
 
@@ -942,115 +1084,133 @@ export const KnowledgeBasePage = () => {
     }
   }, []);
 
-  const handleTreeMenuAction = useCallback((action: TreeNodeMenuAction, node: KnowledgeNode) => {
-    if (action === 'rename') {
-      const result = window.prompt('Новое имя', node.name);
-      if (result === null) return;
-      const trimmed = result.trim();
-      if (!trimmed || trimmed === node.name) return;
-      setKnowledgeTree((t) => recomputeTreeLocations(renameNodeInTree(t, node.id, trimmed)));
-      setOpenedFile((open) => (open?.id === node.id ? { ...open, name: trimmed } : open));
-      return;
-    }
+  const handleTreeMenuAction = useCallback(
+    async (action: TreeNodeMenuAction, node: KnowledgeNode) => {
+      if (action === 'rename') {
+        const result = window.prompt('Новое имя', node.name);
+        if (result === null) return;
+        const trimmed = result.trim();
+        if (!trimmed || trimmed === node.name) return;
+        const row = activeKbItems.find((i) => i.id === node.id);
+        if (!row) return;
+        const updated: KBItemResponse = { ...row, title: trimmed };
+        if (USE_KNOWLEDGE_BASE_MOCK) {
+          setActiveKbItems((rows) => rows.map((r) => (r.id === node.id ? updated : r)));
+        } else {
+          try {
+            await updateKb(node.id, toKbRequest(updated));
+            await reloadFromApi();
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        setOpenedFile((open) => (open?.id === node.id ? { ...open, name: trimmed } : open));
+        return;
+      }
 
-    if (action === 'create-folder' || action === 'create-file') {
-      if (node.type !== 'folder') return;
-      const parent = node as KnowledgeFolder;
-      const loc = childLocationUnderFolder(parent);
-      if (action === 'create-folder') {
-        const nameIn = window.prompt('Имя папки', 'Новая папка');
+      if (action === 'create-folder' || action === 'create-file') {
+        if (node.type !== 'folder') return;
+        const parent = node as KnowledgeFolder;
+        if (action === 'create-folder') {
+          const nameIn = window.prompt('Имя папки', 'Новая папка');
+          if (nameIn === null) return;
+          const name = nameIn.trim();
+          if (!name) return;
+          if (USE_KNOWLEDGE_BASE_MOCK) {
+            const newId = crypto.randomUUID();
+            setActiveKbItems((rows) => [
+              ...rows,
+              { id: newId, parentId: parent.id, type: ItemType.Folder, title: name, content: null },
+            ]);
+          } else {
+            try {
+              await createKb({ parentId: parent.id, type: ItemType.Folder, title: name, content: null });
+              await reloadFromApi();
+            } catch (e) {
+              console.error(e);
+            }
+          }
+          setExpanded((prev) => new Set(prev).add(parent.id));
+          return;
+        }
+        const nameIn = window.prompt('Имя файла', 'Без названия');
         if (nameIn === null) return;
         const name = nameIn.trim();
         if (!name) return;
-        const newId = `user-folder-${Date.now()}`;
-        const newFolder: KnowledgeFolder = {
-          id: newId,
-          type: 'folder',
-          name,
-          location: loc,
-          children: [],
-        };
-        setKnowledgeTree((t) => recomputeTreeLocations(addChildUnderFolder(t, parent.id, newFolder)));
-        setExpanded((prev) => {
-          const next = new Set(prev);
-          next.add(parent.id);
-          return next;
-        });
+        const blank = DEFAULT_FILE_CONTENT.trim();
+        if (USE_KNOWLEDGE_BASE_MOCK) {
+          const newId = crypto.randomUUID();
+          setActiveKbItems((rows) => [
+            ...rows,
+            { id: newId, parentId: parent.id, type: ItemType.Article, title: name, content: blank },
+          ]);
+        } else {
+          try {
+            await createKb({ parentId: parent.id, type: ItemType.Article, title: name, content: blank });
+            await reloadFromApi();
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        setExpanded((prev) => new Set(prev).add(parent.id));
         return;
       }
-      const nameIn = window.prompt('Имя файла', 'Без названия');
-      if (nameIn === null) return;
-      const name = nameIn.trim();
-      if (!name) return;
-      const newId = `user-file-${Date.now()}`;
-      const newFile: KnowledgeFile = {
-        id: newId,
-        type: 'file',
-        name,
-        location: loc,
-      };
-      setKnowledgeTree((t) => recomputeTreeLocations(addChildUnderFolder(t, parent.id, newFile)));
-      setExpanded((prev) => {
-        const next = new Set(prev);
-        next.add(parent.id);
-        return next;
-      });
-      return;
-    }
 
-    if (action !== 'archive') return;
+      if (action !== 'archive') return;
 
-    if (node.type === 'file') {
-      const loc = node.location;
-      setKnowledgeTree((t) => removeFileFromTree(t, node.id));
-      setBookmarks((prev) => {
-        const next = new Set(prev);
-        next.delete(node.id);
-        return next;
-      });
-      setOpenedFile((open) => (open?.id === node.id ? null : open));
-      setArchiveItems((prev) => [
-        {
-          id: `archive-${node.id}-${Date.now()}`,
-          kind: 'file',
-          name: node.name,
-          archivedAt: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }),
-          deleteInDays: 30,
-          originalFileId: node.id,
-          restoreParentFolderIds: [...loc.parentFolderIds],
-          restorePathLabels: [...loc.pathLabels],
-        },
-        ...prev,
-      ]);
-      return;
-    }
+      if (USE_KNOWLEDGE_BASE_MOCK) {
+        const ids = new Set(kbCollectSubtreeIds(node.id, activeKbItems));
+        const toMove = activeKbItems.filter((i) => ids.has(i.id));
+        setActiveKbItems((a) => a.filter((i) => !ids.has(i.id)));
+        setArchivedKbItems((ar) => [...toMove, ...ar]);
+        if (node.type === 'file') {
+          setBookmarks((b) => {
+            const n = new Set(b);
+            n.delete(node.id);
+            return n;
+          });
+          setOpenedFile((o) => (o?.id === node.id ? null : o));
+        } else {
+          const nested = collectFileIdsInSubtree(node);
+          setBookmarks((b) => {
+            const n = new Set(b);
+            nested.forEach((fid) => n.delete(fid));
+            return n;
+          });
+          setOpenedFile((o) => (o && nested.includes(o.id) ? null : o));
+        }
+        return;
+      }
 
-    const folder = node as KnowledgeFolder;
-    const loc = folder.location;
-    const subtree = structuredClone(folder);
-    const nestedFileIds = collectFileIdsInSubtree(folder);
-    setKnowledgeTree((t) => removeFolderFromTree(t, folder.id));
-    setBookmarks((prev) => {
-      const next = new Set(prev);
-      nestedFileIds.forEach((fid) => next.delete(fid));
-      return next;
-    });
-    setOpenedFile((open) => (open && nestedFileIds.includes(open.id) ? null : open));
-    setArchiveItems((prev) => [
-      {
-        id: `archive-folder-${folder.id}-${Date.now()}`,
-        kind: 'folder',
-        name: folder.name,
-        archivedAt: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }),
-        deleteInDays: 30,
-        originalFolderId: folder.id,
-        storedFolderSubtree: subtree,
-        restoreParentFolderIds: [...loc.parentFolderIds],
-        restorePathLabels: [...loc.pathLabels],
-      },
-      ...prev,
-    ]);
-  }, []);
+      const ok = window.confirm(
+        'Удалить элемент и всё содержимое с сервера? В текущем API нет переноса в архив — запись будет удалена.',
+      );
+      if (!ok) return;
+      try {
+        await deleteSubtreeRemote(node.id, activeKbItems);
+        await reloadFromApi();
+        if (node.type === 'file') {
+          setBookmarks((b) => {
+            const n = new Set(b);
+            n.delete(node.id);
+            return n;
+          });
+          setOpenedFile((o) => (o?.id === node.id ? null : o));
+        } else {
+          const nested = collectFileIdsInSubtree(node);
+          setBookmarks((b) => {
+            const n = new Set(b);
+            nested.forEach((fid) => n.delete(fid));
+            return n;
+          });
+          setOpenedFile((o) => (o && nested.includes(o.id) ? null : o));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    },
+    [activeKbItems, deleteSubtreeRemote, reloadFromApi, toKbRequest],
+  );
 
   const isArchive = activeTab === 'archive';
 
@@ -1059,8 +1219,10 @@ export const KnowledgeBasePage = () => {
       return (
         <DocEditor
           file={openedFile}
+          html={openedFileHtml}
           isBookmarked={bookmarks.has(openedFile.id)}
-          onToggleBookmark={() => toggleBookmark(openedFile.id)}
+          onSave={handleSaveArticle}
+          onToggleBookmark={() => void toggleBookmark(openedFile.id)}
           onClose={() => setOpenedFile(null)}
         />
       );
@@ -1068,9 +1230,14 @@ export const KnowledgeBasePage = () => {
 
     if (isArchive) {
       return (
-        <div className="kb-archive-list">
+        <div
+          className={cn('kb-archive-list', isKbLoading && 'kb-archive-list--busy')}
+          aria-busy={isKbLoading}
+        >
           <div className="kb-archive-list__shadow" aria-hidden="true" />
-          {filteredArchive.length === 0 ? (
+          {isKbLoading ? (
+            <div className="kb-panel__spinner" aria-label="Загрузка" />
+          ) : filteredArchive.length === 0 ? (
             <div className="kb-archive-list__empty">
               <span>
                 {isSearching
@@ -1086,7 +1253,7 @@ export const KnowledgeBasePage = () => {
                   item={item}
                   query={searchQuery}
                   onRestore={handleRestore}
-                  onDelete={handleDelete}
+                  onDelete={(row) => void handleDeleteArchived(row)}
                 />
               ))}
             </div>
@@ -1097,9 +1264,14 @@ export const KnowledgeBasePage = () => {
 
     if (isSearching) {
       return (
-        <div className="kb-documents">
+        <div
+          className={cn('kb-documents', isKbLoading && 'kb-documents--busy')}
+          aria-busy={isKbLoading}
+        >
           <div className="kb-documents__inner-shadow" aria-hidden="true" />
-          {searchResults.length === 0 ? (
+          {isKbLoading ? (
+            <div className="kb-panel__spinner" aria-label="Загрузка" />
+          ) : searchResults.length === 0 ? (
             <div className="kb-documents__empty">
               <span className="kb-documents__empty-icon">🔍</span>
               <span>Ничего не найдено по запросу «{searchQuery}»</span>
@@ -1121,9 +1293,14 @@ export const KnowledgeBasePage = () => {
     }
 
     return (
-      <div className="kb-documents">
+      <div
+        className={cn('kb-documents', isKbLoading && 'kb-documents--busy')}
+        aria-busy={isKbLoading}
+      >
         <div className="kb-documents__inner-shadow" aria-hidden="true" />
-        {bookmarkedFiles.length === 0 ? (
+        {isKbLoading ? (
+          <div className="kb-panel__spinner" aria-label="Загрузка" />
+        ) : bookmarkedFiles.length === 0 ? (
           <div className="kb-documents__empty">
             <span className="kb-documents__empty-icon">📌</span>
             <span>
@@ -1143,7 +1320,12 @@ export const KnowledgeBasePage = () => {
   };
 
   return (
-    <main className="kb-page">
+    <main className="kb-page" aria-busy={isKbLoading}>
+      {loadError != null && (
+        <div className="kb-page__error" role="alert" style={{ padding: '0.75rem 1rem', color: '#b00020' }}>
+          {loadError}
+        </div>
+      )}
       <aside className="kb-sidebar" aria-label="Дерево базы знаний">
         <div className="kb-search">
           <img src={searchIcon} alt="" aria-hidden="true" className="kb-search__icon" />
@@ -1168,16 +1350,27 @@ export const KnowledgeBasePage = () => {
         </div>
 
         {isArchive ? (
-          <div className="kb-archive-empty" role="note">
-            <span className="kb-archive-empty__text">
-              В архиве иерархия файлов недоступна
-            </span>
-          </div>
+          isKbLoading ? (
+            <div className="kb-tree" role="status" aria-busy="true" aria-label="Загрузка базы знаний">
+              <div className="kb-tree__inner-shadow" aria-hidden="true" />
+              <div className="kb-tree__inner kb-tree__inner--busy">
+                <div className="kb-panel__spinner" aria-hidden="true" />
+              </div>
+            </div>
+          ) : (
+            <div className="kb-archive-empty" role="note">
+              <span className="kb-archive-empty__text">
+                В архиве иерархия файлов недоступна
+              </span>
+            </div>
+          )
         ) : (
-          <div className="kb-tree" role="tree">
+          <div className="kb-tree" role="tree" aria-busy={isKbLoading}>
             <div className="kb-tree__inner-shadow" aria-hidden="true" />
-            <div className="kb-tree__inner">
-              {filteredTree.length === 0 ? (
+            <div className={cn('kb-tree__inner', isKbLoading && 'kb-tree__inner--busy')}>
+              {isKbLoading ? (
+                <div className="kb-panel__spinner" aria-label="Загрузка" />
+              ) : filteredTree.length === 0 ? (
                 <div className="kb-tree__empty">Ничего не найдено</div>
               ) : (
                 filteredTree.map((node) => (
@@ -1188,6 +1381,7 @@ export const KnowledgeBasePage = () => {
                     expanded={effectiveExpanded}
                     selectedId={openedFile?.id ?? null}
                     query={searchQuery}
+                    archiveMenuLabel={treeMenuArchiveLabel}
                     onToggle={handleToggle}
                     onOpenFile={setOpenedFile}
                     onTreeMenuAction={handleTreeMenuAction}

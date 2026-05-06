@@ -185,9 +185,9 @@
   align-items: stretch;
   width: 100%;
   max-width: 100%;
-  height: clamp(5.5rem, 18cqw, 14rem);
+  height: clamp(5.5rem, 20cqw, 14rem);
   gap: 0.8rem;
-  padding: clamp(0.8rem, 2cqw, 1.4rem) clamp(1.2rem, 3cqw, 2rem);
+  padding: clamp(1.2rem, 3cqw, 2rem) clamp(1.2rem, 3cqw, 2rem);
   border-radius: 2rem;
   box-shadow: var(--shadow-inner);
   background: var(--surface-inset);
@@ -236,8 +236,8 @@
   container-type: size;
   container-name: stats-disc;
   /* Квадрат в прямоугольнике слота, пропорции 1:1 */
-  width: min(100cqw, 100cqh);
-  max-width: 30rem;
+  width: min(80cqw, 80cqh);
+  max-width: 20rem;
   aspect-ratio: 1;
   height: auto;
   min-width: 0;
@@ -319,6 +319,8 @@
   inset: 0;
   min-width: 1px;
   min-height: 1px;
+  /* Выше .balance-chart__center — иначе оверлей с суммой закрывает и SVG, и тултип Recharts */
+  z-index: 2;
 }
 
 .balance-chart__svg {
@@ -335,6 +337,7 @@
 .balance-chart__center {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;

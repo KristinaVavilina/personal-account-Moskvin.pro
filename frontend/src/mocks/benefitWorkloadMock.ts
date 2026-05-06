@@ -35,7 +35,44 @@ export function createMockBenefitWorkload(dayCount: number): BenefitWorkloadPoin
   });
 }
 
-/** Мок за указанный календарный месяц (столько значений, сколько дней в месяце) */
-export function createMockBenefitWorkloadForMonth(year: number, monthIndex0: number): BenefitWorkloadPoint[] {
-  return createMockBenefitWorkload(getDaysInMonth(year, monthIndex0));
+/** Детерминированный «шум», чтобы серии пользователей расходились (мок офлайна). */
+function mockSeriesMix(key: string, channel: number): number {
+  let h = 2166136261 >>> 0;
+  const str = `${key}#${channel}`;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h / 4294967296;
+}
+
+/** Мок за указанный календарный месяц (`diversityKey` — обычно `userId` для различных профилей). */
+export function createMockBenefitWorkloadForMonth(
+  year: number,
+  monthIndex0: number,
+  diversityKey?: string,
+): BenefitWorkloadPoint[] {
+  const dayCount = getDaysInMonth(year, monthIndex0);
+  if (!diversityKey || !diversityKey.trim()) return createMockBenefitWorkload(dayCount);
+
+  const key = `${year}-${monthIndex0 + 1}|${diversityKey.trim()}`;
+  const shift = mockSeriesMix(key, 1) * 6 + mockSeriesMix(key, 2) * 11;
+  const ampB = 1.35 + mockSeriesMix(key, 3) * 2.55;
+  const ampW = 1.08 + mockSeriesMix(key, 4) * 2.85;
+  const skew = mockSeriesMix(key, 5) * 4.2 - 2.05;
+
+  return Array.from({ length: dayCount }, (_, i) => {
+    const t = i + shift;
+    const dayPhase = `${key}|${i}`;
+    const benefit =
+      2.45 +
+      ampB * Math.sin(t / (2.95 + mockSeriesMix(dayPhase, 6) * 4.2)) +
+      (skew * Math.sin(i / (5.5 + mockSeriesMix(dayPhase, 17) * 4))) / 12;
+    const workload =
+      2.05 -
+      skew * 0.12 +
+      ampW *
+        Math.cos(t / (3.05 + mockSeriesMix(dayPhase, 8) * 3.1) + mockSeriesMix(key, 14) * 2.44);
+    return { day: i + 1, benefit: clampInt05(benefit), workload: clampInt05(workload) };
+  });
 }

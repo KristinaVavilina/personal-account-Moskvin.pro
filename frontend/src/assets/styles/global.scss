@@ -31,7 +31,11 @@ html {
   --shadow-inner-lg:     inset -1rem -1rem 2rem 0 #ffffff, inset 1rem 1rem 2rem 0 rgba(170, 188, 221, 0.6);
   --shadow-inner-subtle: inset 0 0 1rem 0 #aabcdd;
   --shadow-danger:       -0.5rem -0.5rem 1rem 0 #ffffff, 0.5rem 0.5rem 1rem 0 rgba(250, 138, 138, 0.6);
-  --shadow-day:          -0.5rem -0.5rem 1rem 0 #ffffff, 0.5rem 0.5rem 1rem 0 rgba(22, 27, 29, 0.23);
+  --shadow-day:          -0.5rem -0.5rem 1rem 0 #ffffff, 0.5rem 0.5rem 1rem 0 rgba(170, 188, 221, 0.55);
+
+  /* Единая высота модальных окон (задание, отчёт, просмотр) */
+  --modal-shell-height: 88rem;
+  --modal-shell-max-height: 85vh;
 }
 
 // =====================================================
@@ -39,6 +43,7 @@ html {
 //  (классы позиции: recharts-tooltip-wrapper-left/right/top/bottom)
 // =====================================================
 .recharts-tooltip-wrapper {
+  z-index: 10000;
   background: var(--surface-inset);
   border-radius: 1rem;
   color: var(--accent-dark);
@@ -124,4 +129,11 @@ body {
   height: 100%;
   min-width: 0;
   z-index: 2;
+}
+
+/* Обертка вкладки «Прогресс»: не размонтировать страницу, но сохранить flex-цепочку к .dashboard-grid */
+.dashboard-progress-keepalive {
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
 }

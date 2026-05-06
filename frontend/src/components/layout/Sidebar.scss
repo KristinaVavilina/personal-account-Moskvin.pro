@@ -10,7 +10,8 @@
   justify-content: space-between;
   padding: 1.5rem 1rem;
   flex-shrink: 0;
-  z-index: 3;
+  /* Ниже .main-content (z-index: 2), иначе fixed-модалки из main не перекрывают сайдбар */
+  z-index: 1;
 }
 
 .sidebar__logo,
@@ -19,6 +20,7 @@
   width: 6rem;
   height: 6rem;
   background: var(--surface-inset);
+  border: none;
   border-radius: 1.5rem;
   display: flex;
   align-items: center;

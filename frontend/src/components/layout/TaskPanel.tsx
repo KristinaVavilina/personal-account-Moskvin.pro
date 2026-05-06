@@ -1,10 +1,20 @@
-import { useEffect, useReducer, useState } from 'react';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useReducer,
+  useState,
+} from 'react';
 import taskTypeIcon from '../../assets/icons/task-type-icon.svg';
 import { getActiveTaskListFromMocks } from '../../mocks/taskListFromMockTask';
+import { resolveDevUserId } from '../../api/devUser';
+import { formatLocalDateIso } from '../../utils/progressDashboardTransform';
+import { useReportEntriesStore } from '../../store/useReportEntriesStore';
 import { AddTaskModal } from './AddTaskModal';
 import { EditTaskModal } from './EditTaskModal';
 import { ArchiveModal } from './ArchiveModal';
-import { ReportModal } from './ReportModal';
+import { ReportModal, type ReportSavePayload } from './ReportModal';
 import { AlertMessage } from './AlertMessage';
 import {
   type AlertState,
@@ -17,6 +27,11 @@ import './TaskPanel.scss';
 
 export type { ArchivedTaskRecord, TaskListItem } from './taskListTypes';
 
+/** Синхронизация списка заданий с сохранением отчёта с вкладки «Отчёт». */
+export type TaskPanelHandle = {
+  getTaskById: (id: string) => TaskListItem | null;
+  applyTaskUpdateFromReport: (payload: ReportSavePayload) => void;
+};
 
 interface TaskPanelProps {
   tasks?: TaskListItem[];
@@ -25,19 +40,25 @@ interface TaskPanelProps {
   initialArchivedEmpty?: boolean;
   actionButtonLabel?: string;
   onActionButtonClick?: () => void;
+  /** При переводе задания в «выполнено» (100%) — обновление статистики и хронологии дня. */
+  onTaskCompletedStatisticsRefresh?: (task: TaskListItem) => void;
   debugAlertState?: AlertState | null;
 }
 
 const defaultTasks: TaskListItem[] = getActiveTaskListFromMocks();
 
-export const TaskPanel = ({
-  tasks = defaultTasks,
-  isLoading = false,
-  initialArchivedEmpty = false,
-  actionButtonLabel = TASK_PANEL_ACTION_ARCHIVE,
-  onActionButtonClick,
-  debugAlertState = null,
-}: TaskPanelProps) => {
+export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function TaskPanel(
+  {
+    tasks = defaultTasks,
+    isLoading = false,
+    initialArchivedEmpty = false,
+    actionButtonLabel = TASK_PANEL_ACTION_ARCHIVE,
+    onActionButtonClick,
+    onTaskCompletedStatisticsRefresh,
+    debugAlertState = null,
+  },
+  ref,
+) {
   const [panel, dispatch] = useReducer(
     taskPanelTasksReducer,
     { tasks, emptyArchive: initialArchivedEmpty },
@@ -54,19 +75,107 @@ export const TaskPanel = ({
     dispatch({ type: 'SYNC_TASKS', tasks });
   }, [tasks]);
 
+  const getTaskById = useCallback(
+    (id: string): TaskListItem | null => {
+      const active = taskList.find((t) => t.id === id);
+      if (active) return active;
+      return archivedList.find((a) => a.task.id === id)?.task ?? null;
+    },
+    [taskList, archivedList],
+  );
+
+  const applyTaskUpdateFromReport = useCallback(
+    (payload: ReportSavePayload) => {
+      const found = getTaskById(payload.taskId);
+      if (!found) return;
+      const wasComplete = found.progress === 100;
+      const updated: TaskListItem = {
+        ...found,
+        progress: payload.newProgress,
+        description: payload.taskDescription,
+        taskType: payload.taskType,
+      };
+      const inActive = taskList.some((t) => t.id === payload.taskId);
+      if (inActive) {
+        dispatch({ type: 'UPDATE_TASK', task: updated });
+      } else {
+        dispatch({ type: 'UPDATE_ARCHIVED_TASK', task: updated });
+      }
+      if (updated.progress === 100 && !wasComplete) {
+        onTaskCompletedStatisticsRefresh?.(updated);
+      }
+    },
+    [getTaskById, taskList, onTaskCompletedStatisticsRefresh],
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getTaskById,
+      applyTaskUpdateFromReport,
+    }),
+    [getTaskById, applyTaskUpdateFromReport],
+  );
+
   const archiveModalRows = archivedList.map((a) => ({
     id: a.task.id,
     name: a.task.name,
     daysLeft: a.daysLeft,
   }));
 
+  const notifyIfCompleted = (task: TaskListItem) => {
+    if (task.progress === 100) onTaskCompletedStatisticsRefresh?.(task);
+  };
+
   const handleDeleteTask = (id: string) => {
+    const task = taskList.find((t) => t.id === id);
     dispatch({ type: 'DELETE_TO_ARCHIVE', id });
+    if (task && task.progress === 100) onTaskCompletedStatisticsRefresh?.(task);
   };
 
   const handleRestoreTask = (id: string) => {
     dispatch({ type: 'RESTORE_FROM_ARCHIVE', id });
   };
+
+  const handleReportSave = useCallback(
+    async (payload: ReportSavePayload) => {
+      const task = taskList.find((t) => t.id === payload.taskId);
+      if (!task) return;
+
+      const userId = await resolveDevUserId();
+
+      const updated: TaskListItem = {
+        ...task,
+        progress: payload.newProgress,
+        description: payload.taskDescription,
+        taskType: payload.taskType,
+      };
+      dispatch({ type: 'UPDATE_TASK', task: updated });
+
+      const comment =
+        payload.workDescription.trim() ||
+        (payload.taskDescription.trim() ? payload.taskDescription.trim() : null);
+      /** Без userId отчёт всё равно кладём в стор (страница «Отчёт»), иначе запись теряется при null из resolveDevUserId. */
+      useReportEntriesStore.getState().addEntry({
+        id: crypto.randomUUID(),
+        taskId: payload.taskId,
+        userId: userId ?? '',
+        date: formatLocalDateIso(new Date()),
+        startTime: payload.timeStart,
+        endTime: payload.timeEnd,
+        progressSnapshot: payload.newProgress,
+        comment,
+        taskTitle: task.name,
+        taskTypeLabel: payload.taskType,
+        taskDescriptionSnapshot: payload.taskDescription,
+      });
+
+      if (updated.progress === 100) {
+        onTaskCompletedStatisticsRefresh?.(updated);
+      }
+    },
+    [taskList, onTaskCompletedStatisticsRefresh],
+  );
 
   const handleActionClick = () => {
     if (onActionButtonClick) {
@@ -132,26 +241,32 @@ export const TaskPanel = ({
           <div className="task-widget__inner-shadow" aria-hidden="true" />
         </div>
 
-        <button className="btn btn--add-task" onClick={() => setIsModalOpen(true)}>
+        <button type="button" className="btn btn--add-task" onClick={() => setIsModalOpen(true)}>
           Добавить задание
         </button>
       </div>
 
-      <button className="btn task-panel__action-btn" onClick={handleActionClick}>
+      <button type="button" className="btn task-panel__action-btn" onClick={handleActionClick}>
         {actionButtonLabel}
       </button>
 
       {isModalOpen && (
         <AddTaskModal
           onClose={() => setIsModalOpen(false)}
-          onAdd={(task) => dispatch({ type: 'ADD_TASK', task })}
+          onAdd={(task) => {
+            dispatch({ type: 'ADD_TASK', task });
+            notifyIfCompleted(task);
+          }}
         />
       )}
       {editingTask && (
         <EditTaskModal
           task={editingTask}
           onClose={() => setEditingTask(null)}
-          onSave={(updated) => dispatch({ type: 'UPDATE_TASK', task: updated })}
+          onSave={(updated) => {
+            dispatch({ type: 'UPDATE_TASK', task: updated });
+            notifyIfCompleted(updated);
+          }}
           onDelete={handleDeleteTask}
         />
       )}
@@ -162,9 +277,15 @@ export const TaskPanel = ({
           onRestore={handleRestoreTask}
         />
       )}
-      {isReportOpen && <ReportModal onClose={() => setIsReportOpen(false)} />}
+      {isReportOpen && (
+        <ReportModal
+          tasks={taskList}
+          onClose={() => setIsReportOpen(false)}
+          onReportSave={handleReportSave}
+        />
+      )}
 
       <AlertMessage debugState={debugAlertState} />
     </div>
   );
-};
+});

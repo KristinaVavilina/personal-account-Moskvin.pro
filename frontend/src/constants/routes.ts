@@ -7,5 +7,6 @@ export const ROUTE = {
   CALENDAR: '/calendar',
   PROFILE: '/profile',
   KNOWLEDGE_BASE: '/knowledge-base',
+  EMPLOYEES: '/employees',
   HOME: '/',
 } as const;
