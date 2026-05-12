@@ -12,16 +12,16 @@
  */
 
 /** Дашборд: рефлексии, таймлоги, задачи. */
-export const USE_PROGRESS_MOCK = true;
+export const USE_PROGRESS_MOCK = false;
 
 /** Каталог сотрудников и метаданные пользователя. */
-export const USE_EMPLOYEES_MOCK = true;
+export const USE_EMPLOYEES_MOCK = false;
 
 /** База знаний. */
-export const USE_KNOWLEDGE_BASE_MOCK = true;
+export const USE_KNOWLEDGE_BASE_MOCK = false;
 
 /** Страница «Профиль». */
-export const USE_PROFILE_MOCK = true;
+export const USE_PROFILE_MOCK = false;
 
 /** Совпадает с `mockUsers[0]` в apiMockData — для офлайн-моков без GET /api/User. */
 export const PROGRESS_MOCK_DEFAULT_USER_ID = 'a1000000-0000-4000-8000-000000000001';

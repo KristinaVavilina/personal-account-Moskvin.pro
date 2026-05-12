@@ -26,7 +26,6 @@ export const DashboardTabsPage = () => {
   const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
   const [taskWidgetItems, setTaskWidgetItems] = useState<TaskListItem[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
-  const [tasksError, setTasksError] = useState<string | null>(null);
   const [progressStatsRevision, setProgressStatsRevision] = useState(0);
   const taskPanelRef = useRef<TaskPanelHandle | null>(null);
 
@@ -57,14 +56,11 @@ export const DashboardTabsPage = () => {
     let cancelled = false;
     (async () => {
       setTasksLoading(true);
-      setTasksError(null);
       try {
         const list = await fetchActiveTasksForDashboard();
         if (!cancelled) setTaskWidgetItems(list);
-      } catch (e) {
-        if (!cancelled) {
-          setTasksError(e instanceof Error ? e.message : 'Не удалось загрузить задания');
-        }
+      } catch {
+        /* ignore */
       } finally {
         if (!cancelled) setTasksLoading(false);
       }
@@ -130,25 +126,18 @@ export const DashboardTabsPage = () => {
           )}
         </aside>
       ) : (
-        <>
-          {tasksError && (
-            <aside className="task-panel-api-error" role="alert">
-              {tasksError}
-            </aside>
-          )}
-          <TaskPanel
-            ref={taskPanelRef}
-            tasks={taskWidgetItems}
-            isLoading={tasksLoading}
-            initialArchivedEmpty
-            onTaskListRefresh={refreshTaskListOnly}
-            actionButtonLabel={
-              activeTab === 'reporting' ? TASK_PANEL_ACTION_REPORT : TASK_PANEL_ACTION_ARCHIVE
-            }
-            onTaskCompletedStatisticsRefresh={refreshTasksAndProgressStatistics}
-            debugAlertState={DEBUG_DASHBOARD_ALERT_STATE}
-          />
-        </>
+        <TaskPanel
+          ref={taskPanelRef}
+          tasks={taskWidgetItems}
+          isLoading={tasksLoading}
+          initialArchivedEmpty
+          onTaskListRefresh={refreshTaskListOnly}
+          actionButtonLabel={
+            activeTab === 'reporting' ? TASK_PANEL_ACTION_REPORT : TASK_PANEL_ACTION_ARCHIVE
+          }
+          onTaskCompletedStatisticsRefresh={refreshTasksAndProgressStatistics}
+          debugAlertState={DEBUG_DASHBOARD_ALERT_STATE}
+        />
       )}
     </>
   );

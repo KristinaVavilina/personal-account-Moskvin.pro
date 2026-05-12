@@ -805,7 +805,6 @@ export const KnowledgeBasePage = () => {
   const [apiUserId, setApiUserId] = useState<string | null>(null);
 
   const [openedFile, setOpenedFile] = useState<KnowledgeFile | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [isKbLoading, setIsKbLoading] = useState(true);
 
   const knowledgeTree = useMemo(() => kbFlatToTree(activeKbItems), [activeKbItems]);
@@ -831,7 +830,6 @@ export const KnowledgeBasePage = () => {
     let cancelled = false;
     setIsKbLoading(true);
     (async () => {
-      setLoadError(null);
       try {
         if (USE_KNOWLEDGE_BASE_MOCK) {
           const active = getMockActiveKbItems();
@@ -860,10 +858,8 @@ export const KnowledgeBasePage = () => {
         const qlFiltered = uid ? ql.filter((l) => l.userId == null || l.userId === uid) : ql;
         setQuickLinkByKbId(new Map(qlFiltered.map((l) => [l.kbItemId, l.id])));
         setBookmarks(new Set(qlFiltered.map((l) => l.kbItemId)));
-      } catch (e) {
-        if (!cancelled) {
-          setLoadError(e instanceof Error ? e.message : 'Ошибка загрузки базы знаний');
-        }
+      } catch {
+        /* ignore */
       } finally {
         if (!cancelled) {
           setIsKbLoading(false);
@@ -1321,11 +1317,6 @@ export const KnowledgeBasePage = () => {
 
   return (
     <main className="kb-page" aria-busy={isKbLoading}>
-      {loadError != null && (
-        <div className="kb-page__error" role="alert" style={{ padding: '0.75rem 1rem', color: '#b00020' }}>
-          {loadError}
-        </div>
-      )}
       <aside className="kb-sidebar" aria-label="Дерево базы знаний">
         <div className="kb-search">
           <img src={searchIcon} alt="" aria-hidden="true" className="kb-search__icon" />
