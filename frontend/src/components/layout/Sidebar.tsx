@@ -3,6 +3,7 @@ import moskvinLogo from '../../assets/icons/moskvin-logo.svg';
 import progressIcon from '../../assets/icons/progress-icon.svg';
 import knowledgeBaseIcon from '../../assets/icons/knowlege-base-icon.svg';
 import employeesIcon from '../../assets/icons/employees-icon.svg';
+import renderFarmIcon from '../../assets/icons/render-farm-icon.svg';
 import profileIcon from '../../assets/icons/profile-icon.svg';
 import { ROUTE } from '../../constants';
 import { isDashboardPath } from '../../utils';
@@ -49,6 +50,16 @@ export const Sidebar = () => {
           aria-label="Сотрудники"
         >
           <img src={employeesIcon} alt="Сотрудники" />
+        </NavLink>
+        <NavLink
+          to={ROUTE.RENDER_FARM}
+          className={({ isActive }) =>
+            'sidebar__item sidebar__item--render-farm' +
+            (isActive ? ' sidebar__item--active' : '')
+          }
+          aria-label="Рендер-ферма"
+        >
+          <img src={renderFarmIcon} alt="Рендер-ферма" />
         </NavLink>
       </nav>
 

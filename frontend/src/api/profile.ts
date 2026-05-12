@@ -1,5 +1,4 @@
-import { PROGRESS_MOCK_DEFAULT_USER_ID } from '../config/progressSource';
-import { USE_PROFILE_MOCK } from '../config/profileSource';
+import { PROGRESS_MOCK_DEFAULT_USER_ID, USE_PROFILE_MOCK } from '../config';
 import type { ApiUserResponse } from '../types/userApi';
 import { getMockUserProfileById } from '../mocks/profileMock';
 import { resolveDevUserId } from './devUser';

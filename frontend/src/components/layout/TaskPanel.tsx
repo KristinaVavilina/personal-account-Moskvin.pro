@@ -16,11 +16,12 @@ import {
 } from '../../api/tasks';
 import { createTimeLog } from '../../api/timeLogs';
 import { fetchTaskTypes, taskTypeLabelToTypeIdString } from '../../api/taskTypes';
-import { USE_PROGRESS_MOCK } from '../../config/progressSource';
+import { USE_PROGRESS_MOCK } from '../../config';
 import { resolveDevUserId } from '../../api/devUser';
 import { normalizeReportTimeForApi } from '../../utils/reportTimeInput';
 import { formatLocalDateIso } from '../../utils/progressDashboardTransform';
 import { useReportEntriesStore } from '../../store/useReportEntriesStore';
+import { notifyError } from '../../lib/notify';
 import { AddTaskModal } from './AddTaskModal';
 import { EditTaskModal } from './EditTaskModal';
 import { ArchiveModal } from './ArchiveModal';
@@ -168,7 +169,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
         await deleteTask(id);
         await onTaskListRefresh?.();
       } catch (e) {
-        window.alert(e instanceof Error ? e.message : 'Не удалось удалить задание на сервере');
+        notifyError(e, 'Не удалось удалить задание на сервере');
       }
       return;
     }
@@ -224,7 +225,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
             comment,
           });
         } catch (e) {
-          window.alert(e instanceof Error ? e.message : 'Ошибка сохранения отчёта на сервере');
+          notifyError(e, 'Ошибка сохранения отчёта на сервере');
           throw e;
         }
       }
@@ -353,7 +354,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
                   onTaskCompletedStatisticsRefresh?.({ ...task, id: newId });
                 }
               } catch (e) {
-                window.alert(e instanceof Error ? e.message : 'Не удалось создать задание');
+                notifyError(e, 'Не удалось создать задание');
                 throw e;
               }
               return;
@@ -383,7 +384,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
                 });
                 await onTaskListRefresh?.();
               } catch (e) {
-                window.alert(e instanceof Error ? e.message : 'Не удалось сохранить задание');
+                notifyError(e, 'Не удалось сохранить задание');
                 throw e;
               }
             }

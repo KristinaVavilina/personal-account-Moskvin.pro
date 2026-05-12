@@ -12,7 +12,7 @@ import {
   taskTypeLabelToChartCategory,
 } from '../utils/progressDashboardTransform';
 
-export { PROGRESS_MOCK_DEFAULT_USER_ID } from '../config/progressSource';
+export { PROGRESS_MOCK_DEFAULT_USER_ID } from '../config';
 
 function pad2(n: number): string {
   return String(n).padStart(2, '0');

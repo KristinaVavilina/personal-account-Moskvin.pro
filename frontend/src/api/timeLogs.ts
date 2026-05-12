@@ -1,5 +1,5 @@
 import type { ApiTimeLogRow } from '../types/timeLogApi';
-import { USE_PROGRESS_MOCK } from '../config/progressSource';
+import { USE_PROGRESS_MOCK } from '../config';
 import {
   getMockApiTimeLogsInRange,
 } from '../mocks/progressDashboardMock';

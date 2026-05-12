@@ -1,4 +1,4 @@
-import { PROGRESS_MOCK_DEFAULT_USER_ID, USE_PROGRESS_MOCK } from '../config/progressSource';
+import { PROGRESS_MOCK_DEFAULT_USER_ID, USE_PROGRESS_MOCK } from '../config';
 import { readJson } from './http';
 
 /** Первый пользователь из API или `VITE_DEV_USER_ID`. При `USE_PROGRESS_MOCK` — без запроса к /api/User. */

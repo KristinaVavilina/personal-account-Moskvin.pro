@@ -65,6 +65,7 @@ export type { Tab } from './dashboardTabs';
 export { PAGE_TAB_ITEMS } from './dashboardTabs';
 export * from './routes';
 export * from './charts';
+export * from './renderFarm';
 
 export const TASK_PANEL_ACTION_ARCHIVE = 'Архив заданий';
 export const TASK_PANEL_ACTION_REPORT = 'Заполнить отчётность';

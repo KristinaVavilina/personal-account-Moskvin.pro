@@ -1,6 +1,6 @@
 import type { BenefitWorkloadPoint } from '../mocks/benefitWorkloadMock';
 import { getDaysInMonth } from '../mocks/benefitWorkloadMock';
-import { USE_PROGRESS_MOCK } from '../config/progressSource';
+import { USE_PROGRESS_MOCK } from '../config';
 import {
   getMockDailyReflectionRowsForMonth,
 } from '../mocks/progressDashboardMock';

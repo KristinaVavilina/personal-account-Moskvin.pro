@@ -1,5 +1,5 @@
 import closeIcon from '../../assets/icons/close-icon.svg';
-import restoreIcon from '../../assets/icons/restore-icon.svg';
+import restoreIcon from '../../assets/icons/restore-arrow-icon.svg';
 import { handleOverlayClick } from '../../utils';
 import './ArchiveModal.scss';
 

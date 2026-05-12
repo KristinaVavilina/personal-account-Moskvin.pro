@@ -8,5 +8,6 @@ export const ROUTE = {
   PROFILE: '/profile',
   KNOWLEDGE_BASE: '/knowledge-base',
   EMPLOYEES: '/employees',
+  RENDER_FARM: '/render-farm',
   HOME: '/',
 } as const;

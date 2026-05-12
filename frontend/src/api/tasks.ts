@@ -1,5 +1,5 @@
 import type { TaskListItem } from '../components/layout/taskListTypes';
-import { USE_PROGRESS_MOCK } from '../config/progressSource';
+import { USE_PROGRESS_MOCK } from '../config';
 import {
   getMockUserTasksApi,
   mockCompletedTasksCountForCalendarMonth,
