@@ -6,4 +6,4 @@
  * В режиме мока идентификатор пользователя: `VITE_DEV_USER_ID` или дефолт из `progressSource.ts`
  * (`PROGRESS_MOCK_DEFAULT_USER_ID`), без вызова `GET /api/User` только для разрешения id.
  */
-export const USE_PROFILE_MOCK = false;
+export const USE_PROFILE_MOCK = true;

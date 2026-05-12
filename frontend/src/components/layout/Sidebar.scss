@@ -80,6 +80,11 @@
   }
 }
 
+// Иконка «Рендер-ферма» из макета отзеркалена по вертикали
+.sidebar__item--render-farm img {
+  transform: scaleY(-1);
+}
+
 .sidebar__profile {
   box-shadow: var(--shadow-sm);
   transition: box-shadow 0.2s ease;

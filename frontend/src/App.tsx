@@ -7,6 +7,7 @@ import { FirstLoginPage } from './pages/Login/FirstLoginPage';
 import { KnowledgeBasePage } from './pages/KnowledgeBase/KnowledgeBasePage';
 import { EmployeesListPage } from './pages/Employees/EmployeesListPage';
 import { EmployeeStatisticsPage } from './pages/Employees/EmployeeStatisticsPage';
+import { RenderFarmPage } from './pages/RenderFarm/RenderFarmPage';
 import { ROUTE } from './constants';
 import { useUserStore } from './store/useUserStore';
 
@@ -36,6 +37,7 @@ function App() {
           <Route path={ROUTE.KNOWLEDGE_BASE.slice(1)} element={<KnowledgeBasePage />} />
           <Route path={`${ROUTE.EMPLOYEES.slice(1)}/:userId`} element={<EmployeeStatisticsPage />} />
           <Route path={ROUTE.EMPLOYEES.slice(1)} element={<EmployeesListPage />} />
+          <Route path={ROUTE.RENDER_FARM.slice(1)} element={<RenderFarmPage />} />
           <Route path={ROUTE.PROFILE.slice(1)} element={<ProfilePage />} />
         </Route>
 

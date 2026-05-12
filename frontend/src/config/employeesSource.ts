@@ -6,4 +6,4 @@
  * Примечание: задачи и таймлоги коллеги при просмотре зависят от `progressSource.ts` (`USE_PROGRESS_MOCK`)
  * и отдельных GET по `userId` (`/api/Task/user/…`, `/api/TimeLog/user/…`), а не от этого флага.
  */
-export const USE_EMPLOYEES_MOCK = false;
+export const USE_EMPLOYEES_MOCK = true;

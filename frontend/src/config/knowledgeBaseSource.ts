@@ -3,4 +3,4 @@
  * `true` — локальные моки в формате ответов API.
  * `false` — запросы к бэкенду через прокси `/api/*`.
  */
-export const USE_KNOWLEDGE_BASE_MOCK = false;
+export const USE_KNOWLEDGE_BASE_MOCK = true;
