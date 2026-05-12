@@ -44,7 +44,7 @@ import {
   fetchQuickLinksByUser,
 } from '../../api/knowledgeBase';
 import { resolveDevUserId } from '../../api/devUser';
-import { USE_KNOWLEDGE_BASE_MOCK } from '../../config/knowledgeBaseSource';
+import { USE_KNOWLEDGE_BASE_MOCK } from '../../config';
 import type { KBItemRequest, KBItemResponse } from '../../types/knowledgeBaseApi';
 import { ItemType } from '../../types/knowledgeBaseApi';
 import {

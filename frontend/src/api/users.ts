@@ -1,5 +1,5 @@
 import { readJson } from './http';
-import { USE_EMPLOYEES_MOCK } from '../config/employeesSource';
+import { USE_EMPLOYEES_MOCK } from '../config';
 import { getMockEmployeesDirectory } from '../mocks/employeesDirectoryMock';
 import type { ApiUserResponse } from '../types/userApi';
 

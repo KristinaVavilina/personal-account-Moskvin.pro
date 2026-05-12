@@ -5,7 +5,7 @@ import { fetchCompletedTasksCountForMonth } from '../../api/tasks';
 import { fetchTaskTypes } from '../../api/taskTypes';
 import { fetchSystemSettings } from '../../api/systemSettings';
 import { fetchUsers } from '../../api/users';
-import { USE_PROGRESS_MOCK } from '../../config/progressSource';
+import { USE_PROGRESS_MOCK } from '../../config';
 import {
   getMockDailyReflectionRowsForMonth,
   mockCompletedTasksCountForCalendarMonth,

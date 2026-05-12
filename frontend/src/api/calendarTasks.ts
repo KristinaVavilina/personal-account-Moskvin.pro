@@ -1,5 +1,5 @@
 import type { CalendarTaskRow } from '../utils/calendarGantt';
-import { USE_PROGRESS_MOCK } from '../config/progressSource';
+import { USE_PROGRESS_MOCK } from '../config';
 import {
   getDemoScopedMockTasks,
 } from '../mocks/progressDashboardMock';

@@ -5,48 +5,25 @@ import playArrowIcon from '../../assets/icons/play-arrow-icon.svg';
 import renderPreview from '../../assets/images/render-preview-mock.png';
 import { RenderNodesModal } from '../../components/layout/RenderNodesModal';
 import {
+  RENDER_MODE_TABS,
+  RENDER_NUMERIC_INPUT_MAX_LENGTH,
+  RENDER_STATUS_COLOR,
+  RENDER_STATUS_LABEL,
+} from '../../constants';
+import {
   RENDER_JOB_MOCK,
   RENDER_NODES_MOCK,
   RENDER_SETTINGS_MOCK,
-  RENDER_STATUS_COLOR,
-  RENDER_STATUS_LABEL,
-  type RenderMode,
-  type RenderNodeMock,
 } from '../../mocks/renderFarmMock';
-import { cn } from '../../utils';
+import type { RenderMode, RenderNodeMock } from '../../types/renderFarm';
+import { cn, sanitizeDigitsInput } from '../../utils';
+import {
+  emptyRenderSettingsForm,
+  type RenderFarmNumericField,
+  type RenderFarmSettingsFormState,
+  type RenderFarmTextField,
+} from './renderFarmForm';
 import './RenderFarm.scss';
-
-const RENDER_MODE_TABS: { id: RenderMode; label: string }[] = [
-  { id: 'image', label: 'Изображение' },
-  { id: 'animation', label: 'Анимация' },
-];
-
-/** Поля настроек: только то, что ввёл пользователь (пусто → placeholder). */
-type RenderFarmSettingsFormState = {
-  outputName: string;
-  savePath: string;
-  startFrame: string;
-  endFrame: string;
-  fps: string;
-  samples: string;
-  width: string;
-  height: string;
-};
-
-const numericInputMaxLength = 8;
-
-function emptyRenderSettingsForm(): RenderFarmSettingsFormState {
-  return {
-    outputName: '',
-    savePath: '',
-    startFrame: '',
-    endFrame: '',
-    fps: '',
-    samples: '',
-    width: '',
-    height: '',
-  };
-}
 
 export const RenderFarmPage = () => {
   const job = RENDER_JOB_MOCK;
@@ -64,19 +41,14 @@ export const RenderFarmPage = () => {
   );
 
   const handleTextChange =
-    (key: keyof Pick<RenderFarmSettingsFormState, 'outputName' | 'savePath'>) =>
+    (key: RenderFarmTextField) =>
     (e: ChangeEvent<HTMLInputElement>) =>
       setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
   const handleNumericDigitsChange =
-    (
-      key: keyof Pick<
-        RenderFarmSettingsFormState,
-        'startFrame' | 'endFrame' | 'fps' | 'samples' | 'width' | 'height'
-      >,
-    ) =>
+    (key: RenderFarmNumericField) =>
     (e: ChangeEvent<HTMLInputElement>) => {
-      const cleaned = e.target.value.replace(/[^\d]/g, '').slice(0, numericInputMaxLength);
+      const cleaned = sanitizeDigitsInput(e.target.value, RENDER_NUMERIC_INPUT_MAX_LENGTH);
       setForm((prev) => ({ ...prev, [key]: cleaned }));
     };
 

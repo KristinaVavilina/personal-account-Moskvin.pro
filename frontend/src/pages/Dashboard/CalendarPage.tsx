@@ -3,7 +3,7 @@ import dropdownArrowIcon from '../../assets/icons/dropdown-arrow-icon.svg';
 import { fetchCalendarTaskRows, fetchCalendarTaskRowsForUser } from '../../api/calendarTasks';
 import { resolveDevUserId } from '../../api/devUser';
 import { fetchTimeLogsForDateRange, fetchTimeLogsForUserDateRange, monthBoundsIso } from '../../api/timeLogs';
-import { USE_PROGRESS_MOCK } from '../../config/progressSource';
+import { USE_PROGRESS_MOCK } from '../../config';
 import {
   MONTHS,
   MONTH_INDEX,

@@ -1,10 +1,12 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import closeIcon from '../../assets/icons/close-icon.svg';
 import {
+  RENDER_NODE_ADDRESS_PLACEHOLDER,
+  RENDER_NODE_NAME_PLACEHOLDER,
   RENDER_NODE_STATUS_COLOR,
   RENDER_NODE_STATUS_LABEL,
-  type RenderNodeMock,
-} from '../../mocks/renderFarmMock';
+} from '../../constants';
+import type { RenderNodeMock } from '../../types/renderFarm';
 import { handleOverlayClick } from '../../utils';
 import './RenderNodesModal.scss';
 
@@ -14,9 +16,6 @@ export interface RenderNodesModalProps {
   nodes: RenderNodeMock[];
   onNodesChange: (next: RenderNodeMock[]) => void;
 }
-
-const NODE_NAME_PLACEHOLDER = 'Например: PC-01';
-const NODE_ADDRESS_PLACEHOLDER = 'Например: 192.168.0.1:15000';
 
 /**
  * Модалка «Список узлов рендера» (Figma 964:2311).
@@ -157,7 +156,7 @@ export const RenderNodesModal = ({
                 className="render-nodes-modal__add-input"
                 value={newNodeName}
                 onChange={handleNameChange}
-                placeholder={NODE_NAME_PLACEHOLDER}
+                placeholder={RENDER_NODE_NAME_PLACEHOLDER}
               />
             </label>
             <label className="render-nodes-modal__add-field">
@@ -167,7 +166,7 @@ export const RenderNodesModal = ({
                 className="render-nodes-modal__add-input"
                 value={newNodeAddress}
                 onChange={handleAddressChange}
-                placeholder={NODE_ADDRESS_PLACEHOLDER}
+                placeholder={RENDER_NODE_ADDRESS_PLACEHOLDER}
               />
             </label>
           </div>

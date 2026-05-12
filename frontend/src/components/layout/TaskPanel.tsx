@@ -16,7 +16,7 @@ import {
 } from '../../api/tasks';
 import { createTimeLog } from '../../api/timeLogs';
 import { fetchTaskTypes, taskTypeLabelToTypeIdString } from '../../api/taskTypes';
-import { USE_PROGRESS_MOCK } from '../../config/progressSource';
+import { USE_PROGRESS_MOCK } from '../../config';
 import { resolveDevUserId } from '../../api/devUser';
 import { normalizeReportTimeForApi } from '../../utils/reportTimeInput';
 import { formatLocalDateIso } from '../../utils/progressDashboardTransform';

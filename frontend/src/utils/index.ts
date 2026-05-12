@@ -75,6 +75,13 @@ export function isDashboardPath(pathname: string): boolean {
   return DASHBOARD_PATHS.some((p) => pathname.startsWith(p));
 }
 
+// ─── Поля ввода ──────────────────────────────────────────────────────────────
+
+/** Оставляет только цифры и ограничивает длину строки (для type="text" inputMode="numeric"). */
+export function sanitizeDigitsInput(value: string, maxLength: number): string {
+  return value.replace(/\D/g, '').slice(0, maxLength);
+}
+
 // ─── Текст / склонения ───────────────────────────────────────────────────────
 
 /** Склонение подписи: «1 задание», «2 задания», «5 заданий». */
