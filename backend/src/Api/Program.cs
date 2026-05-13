@@ -1,13 +1,19 @@
+using System.Text;
 using Api.Middleware;
+using Application.Interfaces.Services;
 using Application.Interfaces.Services.KnowledgeBase;
 using Application.Interfaces.Services.System;
 using Application.Interfaces.Services.TimeLogs;
 using Application.Interfaces.Services.Users;
+using Application.Options;
+using Application.Services;
 using Application.Services.KnowledgeBase;
 using Application.Services.System;
 using Application.Services.TimeLogs;
 using Application.Services.Users;
 using Application.Mapping;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Domain.Interfaces.Repositories.KnowledgeBase;
 using Domain.Interfaces.Repositories.System;
 using Domain.Interfaces.Repositories.TimeLogs;
@@ -22,15 +28,43 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var seqUrl = Environment.GetEnvironmentVariable("Seq__ServerUrl")
+             ?? builder.Configuration["Seq:ServerUrl"]
+             ?? "http://seq:80";
+
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .Enrich.FromLogContext()
     .Enrich.WithMachineName()
     .WriteTo.Console()
-    .WriteTo.Seq("http://localhost:5341")
+    .WriteTo.Seq("http://seq:80")
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+
+var jwtSection = builder.Configuration.GetSection(JwtOptions.SectionName);
+var jwtOptions = jwtSection.Get<JwtOptions>()
+    ?? throw new InvalidOperationException($"Секция {JwtOptions.SectionName} не настроена.");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SigningKey)),
+            ValidateIssuer = true,
+            ValidIssuer = jwtOptions.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtOptions.Audience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(1),
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -64,6 +98,8 @@ builder.Services.AddScoped<ITaskTypeService, TaskTypeService>();
 builder.Services.AddScoped<ITimeLogService, TimeLogService>();
 builder.Services.AddScoped<IPositionService, PositionService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Для поиска профилей в текущей сборке
 builder.Services.AddAutoMapper(_ => { }, typeof(ApplicationMappingProfile).Assembly);
@@ -97,6 +133,8 @@ try
     }
 
     app.UseHttpsRedirection();
+    app.UseAuthentication();
+    app.UseAuthorization();
     app.MapControllers();
 
     app.Run();
