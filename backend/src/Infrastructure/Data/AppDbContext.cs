@@ -4,6 +4,7 @@ using Domain.Models.System;
 using Domain.Models.TimeLogs;
 using Microsoft.EntityFrameworkCore;
 using Domain.Enums;
+using Domain.Models.Render;
 
 namespace Infrastructure.Data;
 
@@ -26,6 +27,8 @@ public class AppDbContext : DbContext
     public DbSet<QuickLink> QuickLinks { get; set; }
 
     public DbSet<SystemSetting> SystemSettings { get; set; }
+
+    public DbSet<RenderJob> RenderJobs { get; set; }
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
@@ -61,6 +64,12 @@ public class AppDbContext : DbContext
         {
             entity.Property(kb => kb.Id).HasDefaultValueSql("gen_random_uuid()");
             entity.Property(kb => kb.IsArchived).HasDefaultValue(false);
+        });
+
+        modelBuilder.Entity<RenderJob>(entity =>
+        {
+            entity.Property(rj => rj.CreatedAt).HasDefaultValueSql("now()");
+            entity.Property(rj => rj.Status).HasDefaultValue("Queued");
         });
     }
 }

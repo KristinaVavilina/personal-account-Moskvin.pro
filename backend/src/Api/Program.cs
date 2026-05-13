@@ -25,6 +25,8 @@ using Infrastructure.Repositories.TimeLogs;
 using Infrastructure.Repositories.Users;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Application.Interfaces.Services.Render;
+using Application.Services.Render;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -64,6 +66,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddHttpClient<RenderServiceClient>(client =>
+{
+    var apiUrl = builder.Configuration["RenderService:ApiUrl"];
+    if (!string.IsNullOrEmpty(apiUrl))
+    {
+        client.BaseAddress = new Uri(apiUrl);
+    }
+});
+
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
@@ -100,6 +111,7 @@ builder.Services.AddScoped<IPositionService, PositionService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IRenderService, RenderService>();
 
 // Для поиска профилей в текущей сборке
 builder.Services.AddAutoMapper(_ => { }, typeof(ApplicationMappingProfile).Assembly);
