@@ -44,5 +44,16 @@ services:
       - SEQ_FIRSTRUN_NOAUTHENTICATION=True
     ports:
       - "5341:80"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend_web
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
 volumes:
   postgres_data:
