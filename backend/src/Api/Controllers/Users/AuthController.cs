@@ -43,7 +43,7 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Регистрация успешно завершена" });
     }
 
-    [Authorize(Roles = "Admin")]
+    //[Authorize(Roles = "Admin")]
     [HttpPost("invite")]
     public async Task<IActionResult> InviteEmployee([FromBody] UserRequest request)
     {

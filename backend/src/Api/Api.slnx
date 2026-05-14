@@ -2,5 +2,6 @@
   <Project Path="../Application/Application.csproj" />
   <Project Path="../Domain/Domain.csproj" />
   <Project Path="../Infrastructure/Infrastructure.csproj" />
+  <Project Path="../Tests/Tests.csproj" Id="d51a441d-c096-41c1-acf9-aa263bc06941" />
   <Project Path="Api.csproj" />
 </Solution>
