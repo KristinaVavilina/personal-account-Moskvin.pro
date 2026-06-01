@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { SaveActionButton } from '../SaveActionButton';
 import closeIcon from '../../assets/icons/close-icon.svg';
 import dropdownArrowIcon from '../../assets/icons/dropdown-arrow-icon.svg';
-import { handleOverlayClick, labelToProgressNumber } from '../../utils';
+import { createClientUuid, handleOverlayClick, labelToProgressNumber } from '../../utils';
 import { TASK_TYPES, TASK_PROGRESS } from '../../constants';
 import type { TaskListItem } from './taskListTypes';
 import './AddTaskModal.scss';
@@ -17,6 +18,7 @@ export const AddTaskModal = ({ onClose, onAdd }: AddTaskModalProps) => {
   const [taskType, setTaskType] = useState<string | null>(null);
   const [taskProgress, setTaskProgress] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<'type' | 'progress' | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const toggleDropdown = (name: 'type' | 'progress') =>
     setOpenDropdown((prev) => (prev === name ? null : name));
@@ -24,11 +26,12 @@ export const AddTaskModal = ({ onClose, onAdd }: AddTaskModalProps) => {
   const canSave = name.trim().length > 0;
 
   const handleSave = async () => {
-    if (!canSave) return;
+    if (!canSave || isSaving) return;
+    setIsSaving(true);
     try {
       await Promise.resolve(
         onAdd({
-          id: crypto.randomUUID(),
+          id: createClientUuid(),
           name: name.trim(),
           description: description.trim(),
           taskType: taskType ?? TASK_TYPES[0],
@@ -38,6 +41,8 @@ export const AddTaskModal = ({ onClose, onAdd }: AddTaskModalProps) => {
       onClose();
     } catch {
       /* ошибка обработана снаружи; модалку не закрываем */
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -165,14 +170,15 @@ export const AddTaskModal = ({ onClose, onAdd }: AddTaskModalProps) => {
         </div>
 
         <div className="modal-task__footer">
-          <button
+          <SaveActionButton
             type="button"
             className="modal-task__save-btn"
             disabled={!canSave}
-            onClick={handleSave}
+            isLoading={isSaving}
+            onClick={() => void handleSave()}
           >
             Сохранить
-          </button>
+          </SaveActionButton>
         </div>
       </div>
     </div>

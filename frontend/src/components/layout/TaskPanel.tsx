@@ -19,9 +19,11 @@ import { fetchTaskTypes, taskTypeLabelToTypeIdString } from '../../api/taskTypes
 import { USE_PROGRESS_MOCK } from '../../config';
 import { resolveDevUserId } from '../../api/devUser';
 import { normalizeReportTimeForApi } from '../../utils/reportTimeInput';
+import { createClientUuid } from '../../utils/createClientUuid';
 import { formatLocalDateIso } from '../../utils/progressDashboardTransform';
 import { useReportEntriesStore } from '../../store/useReportEntriesStore';
-import { notifyError } from '../../lib/notify';
+import { notifyError, notifySuccess } from '../../lib/notify';
+import { NOTIFY_SUCCESS } from '../../lib/notifyMessages';
 import { AddTaskModal } from './AddTaskModal';
 import { EditTaskModal } from './EditTaskModal';
 import { ArchiveModal } from './ArchiveModal';
@@ -145,6 +147,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
               currentProgress: payload.newProgress,
             });
             await onTaskListRefresh?.();
+            notifySuccess(NOTIFY_SUCCESS.reportUpdated);
           } catch {
             /* локальный стейт уже обновлён */
           }
@@ -179,6 +182,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
       try {
         await deleteTask(id);
         await onTaskListRefresh?.();
+        notifySuccess(NOTIFY_SUCCESS.taskDeleted);
       } catch (e) {
         notifyError(e, 'Не удалось удалить задание на сервере');
       }
@@ -206,6 +210,12 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
         taskType: payload.taskType,
       };
 
+      const comment =
+        payload.workDescription.trim() ||
+        (payload.taskDescription.trim() ? payload.taskDescription.trim() : null);
+
+      let entryId = createClientUuid();
+
       if (!USE_PROGRESS_MOCK) {
         try {
           if (!userId) throw new Error('Не удалось определить пользователя');
@@ -223,10 +233,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
           const startT = normalizeReportTimeForApi(payload.timeStart);
           const endT = normalizeReportTimeForApi(payload.timeEnd);
           if (!startT || !endT) throw new Error('Некорректное время');
-          const comment =
-            payload.workDescription.trim() ||
-            (payload.taskDescription.trim() ? payload.taskDescription.trim() : null);
-          await createTimeLog({
+          entryId = await createTimeLog({
             taskId: payload.taskId,
             userId,
             date: formatLocalDateIso(new Date()),
@@ -235,6 +242,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
             progressSnapshot: payload.newProgress,
             comment,
           });
+          notifySuccess(NOTIFY_SUCCESS.reportSaved);
         } catch (e) {
           notifyError(e, 'Ошибка сохранения отчёта на сервере');
           throw e;
@@ -243,11 +251,8 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
 
       dispatch({ type: 'UPDATE_TASK', task: updated });
 
-      const comment =
-        payload.workDescription.trim() ||
-        (payload.taskDescription.trim() ? payload.taskDescription.trim() : null);
       useReportEntriesStore.getState().addEntry({
-        id: crypto.randomUUID(),
+        id: entryId,
         taskId: payload.taskId,
         userId: userId ?? '',
         date: formatLocalDateIso(new Date()),
@@ -361,6 +366,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
                   currentProgress: task.progress,
                 });
                 await onTaskListRefresh?.();
+                notifySuccess(NOTIFY_SUCCESS.taskCreated);
                 if (task.progress === 100) {
                   onTaskCompletedStatisticsRefresh?.({ ...task, id: newId });
                 }
@@ -394,6 +400,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
                   currentProgress: updated.progress,
                 });
                 await onTaskListRefresh?.();
+                notifySuccess(NOTIFY_SUCCESS.taskUpdated);
               } catch (e) {
                 notifyError(e, 'Не удалось сохранить задание');
                 throw e;

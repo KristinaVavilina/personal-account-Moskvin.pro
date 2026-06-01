@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SaveActionButton } from '../SaveActionButton';
 import closeIcon from '../../assets/icons/close-icon.svg';
 import deleteTaskIcon from '../../assets/icons/delete-task-icon.svg';
 import dropdownArrowIcon from '../../assets/icons/dropdown-arrow-icon.svg';
@@ -23,11 +24,14 @@ export const EditTaskModal = ({ task, onClose, onSave, onDelete }: EditTaskModal
   );
   const [taskProgress, setTaskProgress] = useState<string>(() => progressToDropdownLabel(task.progress));
   const [openDropdown, setOpenDropdown] = useState<'type' | 'progress' | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const toggleDropdown = (dropdown: 'type' | 'progress') =>
     setOpenDropdown((prev) => (prev === dropdown ? null : dropdown));
 
   const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       await Promise.resolve(
         onSave({
@@ -41,6 +45,8 @@ export const EditTaskModal = ({ task, onClose, onSave, onDelete }: EditTaskModal
       onClose();
     } catch {
       /* ошибка снаружи */
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -190,9 +196,14 @@ export const EditTaskModal = ({ task, onClose, onSave, onDelete }: EditTaskModal
           >
             <img src={deleteTaskIcon} alt="" />
           </button>
-          <button type="button" className="modal-task__save-btn" onClick={handleSave}>
+          <SaveActionButton
+            type="button"
+            className="modal-task__save-btn"
+            isLoading={isSaving}
+            onClick={() => void handleSave()}
+          >
             Сохранить
-          </button>
+          </SaveActionButton>
         </div>
       </div>
     </div>

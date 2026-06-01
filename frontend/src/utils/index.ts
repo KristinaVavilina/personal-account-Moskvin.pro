@@ -10,6 +10,8 @@ export {
   labelToProgressNumber,
 } from './taskProgress';
 
+export { createClientUuid } from './createClientUuid';
+
 export { formatHoursRu, buildDayTimelineAriaLabel } from './dayTimeline';
 
 export { RECHARTS_NUNITO_TOOLTIP_STYLE, RECHARTS_TICK_STYLE } from './rechartsStyle';
