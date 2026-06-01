@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { ChartWorkloadCategory } from '../constants/charts';
 import type { TaskListItem } from '../components/layout/taskListTypes';
+import { createClientUuid } from '../utils/createClientUuid';
 import {
   formatLocalDateIso,
   taskTypeLabelToChartCategory,
@@ -25,7 +26,7 @@ export const useDayTimelineCompletionsStore = create<DayTimelineCompletionsState
     set({
       records: [
         ...get().records,
-        { id: crypto.randomUUID(), dateIso, category },
+        { id: createClientUuid(), dateIso, category },
       ],
     });
   },

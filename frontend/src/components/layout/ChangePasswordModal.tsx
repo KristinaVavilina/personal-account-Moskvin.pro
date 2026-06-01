@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SaveActionButton } from '../SaveActionButton';
 import closeIcon from '../../assets/icons/close-icon.svg';
 import { handleOverlayClick } from '../../utils';
 import './ChangePasswordModal.scss';
@@ -19,6 +20,7 @@ export const ChangePasswordModal = ({ onClose, onSubmit }: ChangePasswordModalPr
   const [newPassword, setNewPassword] = useState('');
   const [repeatPassword, setRepeatPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
     setError(null);
@@ -37,11 +39,14 @@ export const ChangePasswordModal = ({ onClose, onSubmit }: ChangePasswordModalPr
       onClose();
       return;
     }
+    setIsSaving(true);
     try {
       await Promise.resolve(onSubmit({ oldPassword: oldTrim, newPassword: newTrim }));
       onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сменить пароль.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -128,9 +133,14 @@ export const ChangePasswordModal = ({ onClose, onSubmit }: ChangePasswordModalPr
           ) : null}
         </div>
 
-        <button type="button" className="modal-password__submit" onClick={() => void handleSave()}>
+        <SaveActionButton
+          type="button"
+          className="modal-password__submit"
+          isLoading={isSaving}
+          onClick={() => void handleSave()}
+        >
           Сохранить
-        </button>
+        </SaveActionButton>
       </div>
     </div>
   );

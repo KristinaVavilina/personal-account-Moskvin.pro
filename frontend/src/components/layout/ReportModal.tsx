@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { SaveActionButton } from '../SaveActionButton';
 import closeIcon from '../../assets/icons/close-icon.svg';
 import dropdownArrowIcon from '../../assets/icons/dropdown-arrow-icon.svg';
 import { handleOverlayClick } from '../../utils';
@@ -41,6 +42,7 @@ export const ReportModal = ({ onClose, tasks, onReportSave }: ReportModalProps) 
   const [workDescription, setWorkDescription] = useState('');
   const [openDropdown, setOpenDropdown] = useState<Dropdown>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const selectedTask = selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) : undefined;
   const progressOptions = selectedTask ? allowedProgressLabels(selectedTask.progress) : [];
@@ -93,6 +95,7 @@ export const ReportModal = ({ onClose, tasks, onReportSave }: ReportModalProps) 
       return;
     }
 
+    setIsSaving(true);
     try {
       await Promise.resolve(
         onReportSave({
@@ -108,6 +111,8 @@ export const ReportModal = ({ onClose, tasks, onReportSave }: ReportModalProps) 
       onClose();
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Не удалось сохранить.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -297,9 +302,14 @@ export const ReportModal = ({ onClose, tasks, onReportSave }: ReportModalProps) 
               </p>
             )}
 
-            <button type="button" className="modal-report__save-btn" onClick={handleSave}>
+            <SaveActionButton
+              type="button"
+              className="modal-report__save-btn"
+              isLoading={isSaving}
+              onClick={() => void handleSave()}
+            >
               Сохранить
-            </button>
+            </SaveActionButton>
           </div>
         </div>
       </div>

@@ -26,6 +26,10 @@ export function notifyError(err: unknown, fallback?: string): string {
   return message;
 }
 
+/**
+ * Показать всплывающее уведомление об успешном сохранении / действии на сервере.
+ * Дедупликация по тексту — как у notifyError.
+ */
 export function notifySuccess(message: string): void {
   toast.success(message, { id: `ok:${message}` });
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SaveActionButton } from '../SaveActionButton';
 import closeIcon from '../../assets/icons/close-icon.svg';
 import dropdownArrowIcon from '../../assets/icons/dropdown-arrow-icon.svg';
 import { handleOverlayClick } from '../../utils';
@@ -7,7 +8,7 @@ import './StatusReportModal.scss';
 
 interface StatusReportModalProps {
   onClose: () => void;
-  onSave?: (data: { benefit: string; workload: string }) => void;
+  onSave?: (data: { benefit: string; workload: string }) => void | Promise<void>;
 }
 
 type Dropdown = 'benefit' | 'workload' | null;
@@ -16,6 +17,7 @@ export const StatusReportModal = ({ onClose, onSave }: StatusReportModalProps) =
   const [benefit, setBenefit] = useState<string | null>(null);
   const [workload, setWorkload] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<Dropdown>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const toggleDropdown = (name: Dropdown) =>
     setOpenDropdown((prev) => (prev === name ? null : name));
@@ -121,16 +123,21 @@ export const StatusReportModal = ({ onClose, onSave }: StatusReportModalProps) =
           </div>
         </div>
 
-        <button
+        <SaveActionButton
           type="button"
           className="modal-status__save-btn"
           disabled={!benefit || !workload}
+          isLoading={isSaving}
           onClick={() => {
-            if (benefit && workload) onSave?.({ benefit, workload });
+            if (!benefit || !workload || isSaving) return;
+            setIsSaving(true);
+            void Promise.resolve(onSave?.({ benefit, workload }))
+              .catch(() => undefined)
+              .finally(() => setIsSaving(false));
           }}
         >
           Сохранить
-        </button>
+        </SaveActionButton>
       </div>
     </div>
   );

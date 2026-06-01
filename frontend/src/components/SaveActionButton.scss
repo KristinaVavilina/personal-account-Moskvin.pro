@@ -1,0 +1,43 @@
+.save-action-btn {
+  position: relative;
+
+  &__label {
+    display: inline-block;
+  }
+
+  &--loading {
+    cursor: wait;
+
+    .save-action-btn__label {
+      visibility: hidden;
+    }
+
+    &:disabled {
+      opacity: 1;
+    }
+  }
+
+  &__spinner {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    box-sizing: border-box;
+    width: 1.05em;
+    height: 1.05em;
+    margin: 0;
+    border-radius: 50%;
+    border: 0.14em solid var(--accent-light);
+    border-top-color: var(--accent-dark);
+    transform: translate(-50%, -50%);
+    animation: save-action-btn-spin 0.75s linear infinite;
+  }
+}
+
+@keyframes save-action-btn-spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}

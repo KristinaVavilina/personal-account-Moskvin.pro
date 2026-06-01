@@ -44,6 +44,9 @@ import {
   fetchQuickLinksByUser,
 } from '../../api/knowledgeBase';
 import { resolveDevUserId } from '../../api/devUser';
+import { notifyError, notifySuccess } from '../../lib/notify';
+import { NOTIFY_SUCCESS } from '../../lib/notifyMessages';
+import { createClientUuid } from '../../utils/createClientUuid';
 import { canManage } from '../../constants/userRoles';
 import { useUserStore } from '../../store/useUserStore';
 import { getDevUserIdOverride, USE_KNOWLEDGE_BASE_MOCK } from '../../config';
@@ -55,6 +58,7 @@ import {
   kbRemoveSubtree,
 } from '../../utils/knowledgeBaseTree';
 import { kbArchivedFlatToArchiveRows } from './knowledgeBaseArchiveRows';
+import { SaveActionButton } from '../../components/SaveActionButton';
 import { cn } from '../../utils';
 import './KnowledgeBase.scss';
 
@@ -452,6 +456,7 @@ const ImageWithPaste = Image.extend({
 
 const DocEditor = ({ file, html, isBookmarked, canEdit, onSave, onToggleBookmark, onClose }: DocEditorProps) => {
   const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // useEditor пересоздаёт инстанс при смене file.id, поэтому история TipTap
   // (а значит и undo/redo) начинается с нуля для каждого открытого файла.
@@ -507,10 +512,16 @@ const DocEditor = ({ file, html, isBookmarked, canEdit, onSave, onToggleBookmark
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
 
-  const handleSave = () => {
-    if (!isDirty || !editor) return;
+  const handleSave = async () => {
+    if (!isDirty || !editor || isSaving) return;
     const next = editor.getHTML();
-    void Promise.resolve(onSave(next)).then(() => setIsDirty(false));
+    setIsSaving(true);
+    try {
+      await Promise.resolve(onSave(next));
+      setIsDirty(false);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Команды форматирования вешаем на mousedown и сразу глушим default —
@@ -538,14 +549,15 @@ const DocEditor = ({ file, html, isBookmarked, canEdit, onSave, onToggleBookmark
         </div>
         <div className="kb-editor__header-actions">
           {canEdit && (
-            <button
+            <SaveActionButton
               type="button"
-              className={cn('kb-editor__save', { 'kb-editor__save--disabled': !isDirty })}
-              onClick={handleSave}
+              className={cn('kb-editor__save', { 'kb-editor__save--disabled': !isDirty && !isSaving })}
+              onClick={() => void handleSave()}
               disabled={!isDirty}
+              isLoading={isSaving}
             >
               Сохранить
-            </button>
+            </SaveActionButton>
           )}
           <button
             type="button"
@@ -891,7 +903,7 @@ export const KnowledgeBasePage = () => {
           return next;
         });
       } catch (e) {
-        console.error(e);
+        notifyError(e, 'Не удалось загрузить документ');
       }
     })();
     return () => {
@@ -983,8 +995,9 @@ export const KnowledgeBasePage = () => {
       try {
         await updateKb(cur.id, toKbRequest(nextRow));
         await reloadFromApi();
+        notifySuccess(NOTIFY_SUCCESS.kbArticleSaved);
       } catch (e) {
-        console.error(e);
+        notifyError(e, 'Не удалось сохранить статью');
       }
     },
     [openedFile, activeKbItems, toKbRequest, reloadFromApi],
@@ -1007,8 +1020,9 @@ export const KnowledgeBasePage = () => {
     try {
       await deleteSubtreeRemote(item.rootKbId, archivedKbItems);
       await reloadFromApi();
+      notifySuccess(NOTIFY_SUCCESS.kbArchivedDeleted);
     } catch (e) {
-      console.error(e);
+      notifyError(e, 'Не удалось удалить запись');
     }
   };
 
@@ -1018,8 +1032,9 @@ export const KnowledgeBasePage = () => {
       if (!USE_KNOWLEDGE_BASE_MOCK && ql) {
         try {
           await deleteQuickLink(ql);
+          notifySuccess(NOTIFY_SUCCESS.kbBookmarkRemoved);
         } catch (e) {
-          console.error(e);
+          notifyError(e, 'Не удалось убрать из избранного');
           return;
         }
         setQuickLinkByKbId((m) => {
@@ -1040,8 +1055,9 @@ export const KnowledgeBasePage = () => {
       try {
         const newId = await createQuickLink({ userId: apiUserId, kbItemId: id });
         setQuickLinkByKbId((m) => new Map(m).set(id, newId));
+        notifySuccess(NOTIFY_SUCCESS.kbBookmarkAdded);
       } catch (e) {
-        console.error(e);
+        notifyError(e, 'Не удалось добавить в избранное');
         return;
       }
     }
@@ -1091,7 +1107,7 @@ export const KnowledgeBasePage = () => {
       const name = nameIn.trim();
       if (!name) return;
       if (USE_KNOWLEDGE_BASE_MOCK) {
-        const newId = crypto.randomUUID();
+        const newId = createClientUuid();
         setActiveKbItems((rows) => [
           ...rows,
           { id: newId, parentId, type: ItemType.Folder, title: name, content: null },
@@ -1100,8 +1116,9 @@ export const KnowledgeBasePage = () => {
         try {
           await createKb({ parentId, type: ItemType.Folder, title: name, content: null });
           await reloadFromApi();
+          notifySuccess(NOTIFY_SUCCESS.kbFolderCreated);
         } catch (e) {
-          console.error(e);
+          notifyError(e, 'Не удалось создать папку');
         }
       }
       if (parentId) {
@@ -1119,7 +1136,7 @@ export const KnowledgeBasePage = () => {
       if (!name) return;
       const blank = DEFAULT_FILE_CONTENT.trim();
       if (USE_KNOWLEDGE_BASE_MOCK) {
-        const newId = crypto.randomUUID();
+        const newId = createClientUuid();
         setActiveKbItems((rows) => [
           ...rows,
           { id: newId, parentId, type: ItemType.Article, title: name, content: blank },
@@ -1128,8 +1145,9 @@ export const KnowledgeBasePage = () => {
         try {
           await createKb({ parentId, type: ItemType.Article, title: name, content: blank });
           await reloadFromApi();
+          notifySuccess(NOTIFY_SUCCESS.kbFileCreated);
         } catch (e) {
-          console.error(e);
+          notifyError(e, 'Не удалось создать файл');
         }
       }
       if (parentId) {
@@ -1155,8 +1173,9 @@ export const KnowledgeBasePage = () => {
           try {
             await updateKb(node.id, toKbRequest(updated));
             await reloadFromApi();
+            notifySuccess(NOTIFY_SUCCESS.kbRenamed);
           } catch (e) {
-            console.error(e);
+            notifyError(e, 'Не удалось переименовать');
           }
         }
         setOpenedFile((open) => (open?.id === node.id ? { ...open, name: trimmed } : open));
@@ -1188,6 +1207,7 @@ export const KnowledgeBasePage = () => {
         } else {
           await deleteSubtreeRemote(node.id, activeKbItems);
           await reloadFromApi();
+          notifySuccess(NOTIFY_SUCCESS.kbDeleted);
         }
         if (node.type === 'file') {
           setBookmarks((b) => {
@@ -1206,7 +1226,7 @@ export const KnowledgeBasePage = () => {
           setOpenedFile((o) => (o && nested.includes(o.id) ? null : o));
         }
       } catch (e) {
-        console.error(e);
+        notifyError(e, 'Не удалось удалить элемент');
       }
     },
     [activeKbItems, deleteSubtreeRemote, handleCreateFile, handleCreateFolder, reloadFromApi, toKbRequest],
