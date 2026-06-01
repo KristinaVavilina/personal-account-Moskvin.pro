@@ -28,6 +28,20 @@ docker compose -f docker-compose.yml -f docker-compose.server.yml --profile seed
 cd personal-account-Moskvin.pro
 git pull
 docker compose -f docker-compose.yml -f docker-compose.server.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.server.yml --profile seed run --rm seed
+```
+
+После `up` автоматически выполняется **db-setup** (`ops/postgres/fix-schema.sql`) — исправляет рассинхрон схемы БД, из‑за которого API отдаёт 500.
+
+## Ошибка «внутренняя ошибка сервера» в UI
+
+1. Проверьте API: `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/api/User` на сервере (ожидается **200**).
+2. Логи: `docker compose logs backend --tail=80`
+3. Пересоздайте стек и сид:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.server.yml up -d --build --force-recreate
+docker compose -f docker-compose.yml -f docker-compose.server.yml --profile seed run --rm seed
 ```
 
 ## Доступ

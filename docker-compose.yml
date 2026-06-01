@@ -1,83 +1,108 @@
-services:
-  db:
-    image: postgres:16
-    container_name: postgres_db
-    restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=MoskvinDb
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d MoskvinDb"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    container_name: backend_api
-    depends_on:
-      db:
-        condition: service_healthy
-      seq:
-        condition: service_started
-    ports:
-      - "8080:8080"
-    environment:
-      - TZ=Europe/Moscow
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=MoskvinDb;Username=postgres;Password=postgres
-      - Seq__ServerUrl=http://seq:80
-  
-  seq:
-    image: datalust/seq:latest
-    container_name: seq_logs
-    restart: always
-    environment:
-      - ACCEPT_EULA=Y
-      - SEQ_FIRSTRUN_NOAUTHENTICATION=True
-    ports:
-      - "5341:80"
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: production
-    container_name: frontend_web
-    restart: unless-stopped
-    depends_on:
-      - backend
-    ports:
-      - "80:80"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-
-  # Одноразовое наполнение БД: docker compose --profile seed run --rm seed
-  seed:
-    build:
-      context: ./qa
-      dockerfile: Dockerfile
-    container_name: db_seed
-    environment:
-      QA_API_BASE: http://backend:8080
-      SEED_SKIP_IF_POPULATED: "1"
-    depends_on:
-      backend:
-        condition: service_started
-    profiles:
-      - seed
-    restart: "no"
-
-volumes:
-  postgres_data:
+services:
+  db:
+    image: postgres:16
+    container_name: postgres_db
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=MoskvinDb
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d MoskvinDb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # После Migrate(): выравнивание схемы, если миграция упала частично (идемпотентно)
+  db-setup:
+    image: postgres:16
+    container_name: db_setup
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    environment:
+      PGHOST: db
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: MoskvinDb
+    volumes:
+      - ./ops/postgres:/scripts:ro
+    entrypoint: ["/bin/bash", "/scripts/run-fix.sh"]
+    restart: "no"
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: backend_api
+    depends_on:
+      db:
+        condition: service_healthy
+      seq:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    environment:
+      - TZ=Europe/Moscow
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=MoskvinDb;Username=postgres;Password=postgres
+      - Seq__ServerUrl=http://seq:80
+  
+  seq:
+    image: datalust/seq:latest
+    container_name: seq_logs
+    restart: always
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_NOAUTHENTICATION=True
+    ports:
+      - "5341:80"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    container_name: frontend_web
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+      db-setup:
+        condition: service_completed_successfully
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # Одноразовое наполнение БД: docker compose --profile seed run --rm seed
+  seed:
+    build:
+      context: ./qa
+      dockerfile: Dockerfile
+    container_name: db_seed
+    environment:
+      QA_API_BASE: http://backend:8080
+      SEED_SKIP_IF_POPULATED: "1"
+    depends_on:
+      backend:
+        condition: service_started
+      db-setup:
+        condition: service_completed_successfully
+    profiles:
+      - seed
+    restart: "no"
+
+volumes:
+  postgres_data:
