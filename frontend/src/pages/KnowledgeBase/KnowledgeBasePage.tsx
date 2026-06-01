@@ -46,7 +46,7 @@ import {
 import { resolveDevUserId } from '../../api/devUser';
 import { canManage } from '../../constants/userRoles';
 import { useUserStore } from '../../store/useUserStore';
-import { USE_KNOWLEDGE_BASE_MOCK } from '../../config';
+import { getDevUserIdOverride, USE_KNOWLEDGE_BASE_MOCK } from '../../config';
 import type { KBItemRequest, KBItemResponse } from '../../types/knowledgeBaseApi';
 import { ItemType } from '../../types/knowledgeBaseApi';
 import {
@@ -838,7 +838,7 @@ export const KnowledgeBasePage = () => {
         if (USE_KNOWLEDGE_BASE_MOCK) {
           const active = getMockActiveKbItems();
           const archived = getMockArchivedKbItems();
-          const uid = import.meta.env.VITE_DEV_USER_ID?.trim() ?? null;
+          const uid = getDevUserIdOverride();
           const links = getMockQuickLinksForUser(uid);
           if (cancelled) return;
           setActiveKbItems(active);

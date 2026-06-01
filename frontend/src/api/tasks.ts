@@ -65,7 +65,7 @@ export async function fetchUserTasksRaw(
 
 /**
  * Активные задания пользователя для task-widget.
- * Пользователь: `import.meta.env.VITE_DEV_USER_ID` или первый из GET /api/User.
+ * Пользователь: dev-override (`getDevUserIdOverride`) или первый из GET /api/User.
  * Завершённые (100%) исключаются — они относятся к архиву (см. `fetchArchivedTasksForDashboard`).
  */
 export async function fetchActiveTasksForDashboard(): Promise<TaskListItem[]> {
@@ -132,7 +132,7 @@ export async function countCompletedTasksInMonthViaClient(
 
 /**
  * Число завершённых задач за календарный месяц для dev-пользователя.
- * Пользователь: VITE_DEV_USER_ID или первый из /api/User.
+ * Пользователь: dev-override или первый из /api/User.
  */
 export async function fetchCompletedTasksCountForMonth(
   year: number,
