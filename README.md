@@ -13,16 +13,16 @@ docker compose --profile seed run --rm seed
 - API: http://localhost:8080 (или через nginx `/api/`)
 - Сид БД: см. [qa/README.md](./qa/README.md)
 
-## Сервер 81.26.177.173
+## Публичный сервер (VPS)
 
-Публичный деплой (только порт 80 наружу, без правок бэкенда):
+Деплой без привязки к IP — откройте сайт по IP или домену сервера:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.server.yml up -d --build
 docker compose -f docker-compose.yml -f docker-compose.server.yml --profile seed run --rm seed
 ```
 
-Сайт: **http://81.26.177.173** — подробно [DEPLOY-SERVER.md](./DEPLOY-SERVER.md).
+Подробно: [DEPLOY-SERVER.md](./DEPLOY-SERVER.md), пример хоста: [deploy.env.example](./deploy.env.example).
 
 ## Документация
 
