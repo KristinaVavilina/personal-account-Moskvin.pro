@@ -1,22 +1,34 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { MOCK_LOGIN_CREDENTIALS, ROUTE } from '../../constants';
 import { useUserStore } from '../../store/useUserStore';
 import { AuthCard } from '../../components/layout/AuthCard';
 
+function isMockLoginAllowed(email: string, password: string): boolean {
+  return (
+    email.trim().toLowerCase() === MOCK_LOGIN_CREDENTIALS.email.toLowerCase() &&
+    password === MOCK_LOGIN_CREDENTIALS.password
+  );
+}
+
 export const LoginPage = () => {
   const navigate = useNavigate();
-  const login    = useUserStore((s) => s.login);
+  const isAuthenticated = useUserStore((s) => s.isAuthenticated);
+  const login = useUserStore((s) => s.login);
 
-  const [email,    setEmail]    = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error,    setError]    = useState(false);
+  const [error, setError] = useState(false);
+
+  if (isAuthenticated) {
+    return <Navigate to={ROUTE.PROGRESS} replace />;
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (email === MOCK_LOGIN_CREDENTIALS.email && password === MOCK_LOGIN_CREDENTIALS.password) {
-      login('Иван', 'Разработчик');
+    if (isMockLoginAllowed(email, password)) {
+      login('Москвин Артём Сергеевич', 'Арт-директор');
       navigate(ROUTE.PROGRESS, { replace: true });
     } else {
       setError(true);
