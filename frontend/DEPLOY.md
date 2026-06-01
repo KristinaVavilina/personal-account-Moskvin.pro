@@ -59,6 +59,18 @@ npm run preview
 | `nginx.default.conf` | SPA fallback, gzip, прокси `/api/`, кэш статики |
 | `.dockerignore` | исключает `node_modules`, `dist` из контекста сборки |
 
+## Публичный сервер (81.26.177.173)
+
+Сборка та же; nginx принимает запросы с `server_name 81.26.177.173` (см. `nginx.default.conf`).
+
+Из корня репозитория:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.server.yml up -d --build
+```
+
+Полная инструкция: [DEPLOY-SERVER.md](../DEPLOY-SERVER.md).
+
 ## HTTPS снаружи
 
 TLS обычно терминируется на reverse proxy (Caddy/Traefik/внешний nginx) перед контейнером `frontend:80`. Внутри контейнера остаётся HTTP; заголовки `X-Forwarded-*` пробрасываются в `location /api/`.
