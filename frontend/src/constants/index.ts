@@ -79,8 +79,11 @@ export const DEFAULT_REPORT_MODAL_TASK_NAMES = [
 export const DEFAULT_PROFILE_AVATAR_URL =
   'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=256&h=256&q=60';
 
-/** Тестовый вход (заменить на API). */
-export const MOCK_LOGIN_CREDENTIALS = { email: '123', password: '123' } as const;
+/** Заглушка входа без бэка — единственная разрешённая учётная запись. */
+export const MOCK_LOGIN_CREDENTIALS = {
+  email: 'a.moskvin@moskvin.pro',
+  password: '123',
+} as const;
 
 /** rem — синхронизировать с Calendar.scss */
 export const GANTT_BAR_HEIGHT_REM = 5.4;

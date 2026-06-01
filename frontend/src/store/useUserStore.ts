@@ -13,7 +13,7 @@ interface UserState {
 }
 
 export const useUserStore = create<UserState>((set) => ({
-  isAuthenticated: true,
+  isAuthenticated: false,
   user: null,
   apiRole: null,
   roleLoaded: false,
