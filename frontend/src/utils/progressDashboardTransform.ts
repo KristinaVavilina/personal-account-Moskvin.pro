@@ -112,7 +112,7 @@ export function timeLogDurationHours(startTime: string, endTime: string): number
 }
 
 function taskCategoryForLog(log: ApiTimeLogRow, taskById: Map<string, ApiTaskResponse>): ChartWorkloadCategory {
-  const task = taskById.get(log.taskId);
+  const task = taskById.get(String(log.taskId).toLowerCase());
   const label = apiTypeNameToTaskTypeLabel(task?.typeName);
   return taskTypeLabelToChartCategory(label);
 }
@@ -150,8 +150,9 @@ export function timeLogsToDayCompletionSegments(
     if (isoDayPrefix(log.date) !== day) continue;
     const snap = typeof log.progressSnapshot === 'number' ? log.progressSnapshot : Number(log.progressSnapshot);
     if (snap !== 100) continue;
-    if (!completedCategoryByTask.has(log.taskId)) {
-      completedCategoryByTask.set(log.taskId, taskCategoryForLog(log, taskById));
+    const taskKey = String(log.taskId).toLowerCase();
+    if (!completedCategoryByTask.has(taskKey)) {
+      completedCategoryByTask.set(taskKey, taskCategoryForLog(log, taskById));
     }
   }
   const total = completedCategoryByTask.size;

@@ -43,6 +43,15 @@ export function apiTaskToListItem(t: ApiTaskResponse): TaskListItem {
   };
 }
 
+/** Поиск задачи по id таймлога (GUID без учёта регистра). */
+export function buildTaskLookupMap(tasks: Iterable<ApiTaskResponse>): Map<string, ApiTaskResponse> {
+  const map = new Map<string, ApiTaskResponse>();
+  for (const t of tasks) {
+    map.set(String(t.id).toLowerCase(), t);
+  }
+  return map;
+}
+
 /**
  * GET /api/Task/user/{userId}?isArchived
  * Сырые объекты задач (для маппинга типов к графикам «Прогресс»).
