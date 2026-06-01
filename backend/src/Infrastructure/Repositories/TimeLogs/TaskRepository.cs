@@ -11,6 +11,7 @@ public class TaskRepository(AppDbContext context)
     public async Task<IEnumerable<Domain.Models.TimeLogs.Task>> GetUserTasksAsync(Guid userId, bool isArchived)
     {
         return await _dbSet
+            .Include(x => x.Type)
             .Where(x => x.UserId == userId && x.IsArchived == isArchived)
             .ToListAsync();
     }

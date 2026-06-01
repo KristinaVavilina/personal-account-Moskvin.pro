@@ -10,20 +10,18 @@ import {
 import type { ApiDailyReflectionResponse } from '../types/dailyReflectionApi';
 import type { ApiTimeLogRow } from '../types/timeLogApi';
 import { readJson } from './http';
-import { monthBoundsIso } from './timeLogs';
 import {
   aggregateSessionCompletionsToDayTimeline,
   aggregateSessionCompletionsToWeekBalance,
   calendarWeekBoundsLocal,
   dailyReflectionRowsToBenefitWorkloadSeries,
-  stretchDayTimelineSegmentsToFullDay,
-  timeLogsToDayTimelineSegments,
+  timeLogsToDayCompletionSegments,
   timeLogsToWeekBalanceEntries,
 } from '../utils/progressDashboardTransform';
 import type { DayTimelineSegment } from '../mocks/dayTimelineMock';
 import type { WeekBalanceEntry } from '../mocks/weekBalanceMock';
 import type { ApiTaskResponse } from './tasks';
-import { fetchUserTasksRaw } from './tasks';
+import { fetchUserTasksRaw, countCompletedTasksInMonthViaClient } from './tasks';
 
 export async function fetchEmployeeCompletedTasksCountForMonth(
   userId: string,
@@ -34,11 +32,8 @@ export async function fetchEmployeeCompletedTasksCountForMonth(
   if (USE_PROGRESS_MOCK) {
     return mockCompletedTasksCountForCalendarMonth(userId, year, monthIndex0);
   }
-  const { start, end } = monthBoundsIso(year, monthIndex0);
-  const qs = new URLSearchParams({ startDate: start, endDate: end });
-  const res = await fetch(`/api/Task/user/${encodeURIComponent(userId)}/completed-count?${qs}`);
-  const n = await readJson<number>(res);
-  return typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+  // Обход бага бэка (completed-count игнорирует userId и даты) — считаем на клиенте.
+  return countCompletedTasksInMonthViaClient(userId, year, monthIndex0);
 }
 
 export async function fetchEmployeeBenefitWorkloadForMonth(
@@ -86,12 +81,15 @@ export async function fetchEmployeeDayTimelineSegments(
   }
 
   const d = dayIso.slice(0, 10);
-  const tasksRaw = await fetchUserTasksRaw(userId, false);
-  const taskById = new Map<string, ApiTaskResponse>(tasksRaw.map((t) => [t.id, t]));
-  const logs = await fetchEmployeeTimeLogsInRangeRaw(userId, d, d);
-  return stretchDayTimelineSegmentsToFullDay(
-    timeLogsToDayTimelineSegments(logs, taskById, dayIso),
+  const [active, archived] = await Promise.all([
+    fetchUserTasksRaw(userId, false),
+    fetchUserTasksRaw(userId, true),
+  ]);
+  const taskById = new Map<string, ApiTaskResponse>(
+    [...active, ...archived].map((t) => [t.id, t]),
   );
+  const logs = await fetchEmployeeTimeLogsInRangeRaw(userId, d, d);
+  return timeLogsToDayCompletionSegments(logs, taskById, dayIso);
 }
 
 /** Баланс недели для сотрудника: как «Прогресс» — число завершений по категориям за календарную неделю (мок — демо-задачи; API — таймлоги). */
@@ -106,8 +104,13 @@ export async function fetchEmployeeWeekBalance(
     return aggregateSessionCompletionsToWeekBalance(records, start, end);
   }
 
-  const tasksRaw = await fetchUserTasksRaw(userId, false);
-  const taskById = new Map<string, ApiTaskResponse>(tasksRaw.map((t) => [t.id, t]));
+  const [active, archived] = await Promise.all([
+    fetchUserTasksRaw(userId, false),
+    fetchUserTasksRaw(userId, true),
+  ]);
+  const taskById = new Map<string, ApiTaskResponse>(
+    [...active, ...archived].map((t) => [t.id, t]),
+  );
   const logs = await fetchEmployeeTimeLogsInRangeRaw(userId, start, end);
   return timeLogsToWeekBalanceEntries(logs, taskById, start, end);
 }

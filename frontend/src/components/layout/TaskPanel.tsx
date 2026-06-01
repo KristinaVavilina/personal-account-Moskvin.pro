@@ -46,6 +46,8 @@ export type TaskPanelHandle = {
 
 interface TaskPanelProps {
   tasks?: TaskListItem[];
+  /** Архив заданий с бэка (завершённые/архивные). Источник истины для раздела «Архив». */
+  archivedTasks?: TaskListItem[];
   isLoading?: boolean;
   /** Не подмешивать демо-архив из моков (данные с API). */
   initialArchivedEmpty?: boolean;
@@ -63,6 +65,7 @@ const defaultTasks: TaskListItem[] = getActiveTaskListFromMocks();
 export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function TaskPanel(
   {
     tasks = defaultTasks,
+    archivedTasks,
     isLoading = false,
     initialArchivedEmpty = false,
     actionButtonLabel = TASK_PANEL_ACTION_ARCHIVE,
@@ -75,8 +78,12 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
 ) {
   const [panel, dispatch] = useReducer(
     taskPanelTasksReducer,
-    { tasks, emptyArchive: initialArchivedEmpty },
-    (init) => createInitialTaskPanelState(init.tasks, { emptyArchive: init.emptyArchive }),
+    { tasks, emptyArchive: initialArchivedEmpty, archivedTasks },
+    (init) =>
+      createInitialTaskPanelState(init.tasks, {
+        emptyArchive: init.emptyArchive,
+        archivedTasks: init.archivedTasks,
+      }),
   );
   const { taskList, archivedList } = panel;
 
@@ -88,6 +95,10 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
   useEffect(() => {
     dispatch({ type: 'SYNC_TASKS', tasks });
   }, [tasks]);
+
+  useEffect(() => {
+    if (archivedTasks) dispatch({ type: 'SYNC_ARCHIVED', tasks: archivedTasks });
+  }, [archivedTasks]);
 
   const getTaskById = useCallback(
     (id: string): TaskListItem | null => {

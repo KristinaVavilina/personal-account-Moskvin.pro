@@ -16,7 +16,19 @@ export async function readJson<T>(res: Response): Promise<T> {
     notifyError(err);
     throw err;
   }
-  return res.json() as Promise<T>;
+  const text = await res.text();
+  return parseResponseBody<T>(text);
+}
+
+/** Читает тело успешного ответа: JSON или plain text (например ASP.NET `Ok("Ok")`). */
+function parseResponseBody<T>(raw: string): T {
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined as T;
+  try {
+    return JSON.parse(trimmed) as T;
+  } catch {
+    return trimmed as T;
+  }
 }
 
 /**

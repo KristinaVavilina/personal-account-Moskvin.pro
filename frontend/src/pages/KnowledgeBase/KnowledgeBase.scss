@@ -47,6 +47,14 @@
   height: 100%;
 }
 
+.kb-sidebar-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
 // =====================================================
 //  Поиск
 // =====================================================
@@ -369,6 +377,55 @@
     color: var(--accent-light);
     font-size: 1.8rem;
     text-align: center;
+  }
+}
+
+.kb-tree__actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: stretch;
+  width: 100%;
+}
+
+.kb-tree__action-btn {
+  width: 100%;
+  align-self: stretch;
+  height: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 2rem;
+  border: none;
+  border-radius: 2rem;
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-sm);
+  color: var(--accent-dark);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 500;
+  font-size: 2rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+
+  &:hover:not(:disabled) {
+    box-shadow: var(--shadow-lg);
+  }
+
+  &:active:not(:disabled) {
+    box-shadow: var(--shadow-inner);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 0.2rem solid var(--accent-dark);
+    outline-offset: 0.2rem;
   }
 }
 

@@ -6,7 +6,7 @@ import {
 } from '../mocks/progressDashboardMock';
 import { resolveDevUserId } from './devUser';
 import { readJson } from './http';
-import { monthBoundsIso } from './timeLogs';
+import { monthBoundsIso, fetchTimeLogsForUserDateRange } from './timeLogs';
 import { apiTypeNameToTaskTypeLabel } from './taskTypeMap';
 
 /** Ответ API задачи (camelCase, как у System.Text.Json по умолчанию). */
@@ -66,18 +66,73 @@ export async function fetchUserTasksRaw(
 /**
  * Активные задания пользователя для task-widget.
  * Пользователь: `import.meta.env.VITE_DEV_USER_ID` или первый из GET /api/User.
+ * Завершённые (100%) исключаются — они относятся к архиву (см. `fetchArchivedTasksForDashboard`).
  */
 export async function fetchActiveTasksForDashboard(): Promise<TaskListItem[]> {
   const userId = await resolveDevUserId();
   if (!userId) return [];
 
   const raw = await fetchUserTasksRaw(userId, false);
-  return raw.map(apiTaskToListItem);
+  return raw
+    .filter((t) => normalizeTaskProgress(t.currentProgress) < 100)
+    .map(apiTaskToListItem);
 }
 
 /**
- * GET /api/Task/user/{userId}/completed-count?startDate&endDate
- * Даты — границы календарного месяца (YYYY-MM-DD). Пользователь: VITE_DEV_USER_ID или первый из /api/User.
+ * Архив заданий пользователя: завершённые (100%) активные задачи + помеченные архивными на бэке.
+ * Источник истины — бэкенд, поэтому архив переживает перезагрузку и перемонтирование панели.
+ */
+export async function fetchArchivedTasksForDashboard(): Promise<TaskListItem[]> {
+  const userId = await resolveDevUserId();
+  if (!userId) return [];
+
+  const [active, archived] = await Promise.all([
+    fetchUserTasksRaw(userId, false),
+    fetchUserTasksRaw(userId, true),
+  ]);
+  const completed = active.filter((t) => normalizeTaskProgress(t.currentProgress) === 100);
+  const byId = new Map<string, TaskListItem>();
+  for (const t of [...completed, ...archived]) byId.set(t.id, apiTaskToListItem(t));
+  return [...byId.values()];
+}
+
+/**
+ * Подсчёт завершённых задач пользователя за календарный месяц НА КЛИЕНТЕ.
+ *
+ * Обход бага бэка: эндпоинт `GET /api/Task/user/{id}/completed-count` игнорирует
+ * userId и диапазон дат (возвращает общее число завершённых задач по всей БД).
+ * Здесь считаем корректно: задачи пользователя со 100% прогрессом, по которым
+ * есть тайм-лог в выбранном месяце (привязка к периоду — через тайм-логи).
+ */
+export async function countCompletedTasksInMonthViaClient(
+  userId: string,
+  year: number,
+  monthIndex0: number,
+): Promise<number> {
+  if (!userId) return 0;
+  const { start, end } = monthBoundsIso(year, monthIndex0);
+
+  const [active, archived] = await Promise.all([
+    fetchUserTasksRaw(userId, false),
+    fetchUserTasksRaw(userId, true),
+  ]);
+  const completedIds = new Set(
+    [...active, ...archived]
+      .filter((t) => normalizeTaskProgress(t.currentProgress) === 100)
+      .map((t) => t.id),
+  );
+  if (completedIds.size === 0) return 0;
+
+  const logs = await fetchTimeLogsForUserDateRange(userId, start, end);
+  const monthTaskIds = new Set(logs.map((l) => l.taskId));
+  let count = 0;
+  for (const id of completedIds) if (monthTaskIds.has(id)) count++;
+  return count;
+}
+
+/**
+ * Число завершённых задач за календарный месяц для dev-пользователя.
+ * Пользователь: VITE_DEV_USER_ID или первый из /api/User.
  */
 export async function fetchCompletedTasksCountForMonth(
   year: number,
@@ -91,14 +146,7 @@ export async function fetchCompletedTasksCountForMonth(
   const userId = await resolveDevUserId();
   if (!userId) return 0;
 
-  const { start, end } = monthBoundsIso(year, monthIndex0);
-  const qs = new URLSearchParams({ startDate: start, endDate: end });
-  const res = await fetch(
-    `/api/Task/user/${encodeURIComponent(userId)}/completed-count?${qs}`,
-  );
-  const n = await readJson<number>(res);
-  if (typeof n !== 'number' || !Number.isFinite(n)) return 0;
-  return Math.max(0, Math.floor(n));
+  return countCompletedTasksInMonthViaClient(userId, year, monthIndex0);
 }
 
 /** Тело POST/PUT Task (как `TaskRequest` на бэке). */

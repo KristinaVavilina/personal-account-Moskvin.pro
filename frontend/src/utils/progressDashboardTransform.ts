@@ -135,6 +135,49 @@ export function timeLogsToDayTimelineSegments(
 }
 
 /**
+ * «Хронология дня» из таймлогов: доли шкалы по числу ЗАВЕРШЁННЫХ за день задач каждого типа
+ * (как и сессионный вариант `aggregateSessionCompletionsToDayTimeline`, но источник — таймлоги).
+ * Завершённая за день задача = уникальная задача с таймлогом этого дня и снимком прогресса 100%.
+ */
+export function timeLogsToDayCompletionSegments(
+  logs: ApiTimeLogRow[],
+  taskById: Map<string, ApiTaskResponse>,
+  dayIso: string,
+): DayTimelineSegment[] {
+  const day = isoDayPrefix(dayIso);
+  const completedCategoryByTask = new Map<string, ChartWorkloadCategory>();
+  for (const log of logs) {
+    if (isoDayPrefix(log.date) !== day) continue;
+    const snap = typeof log.progressSnapshot === 'number' ? log.progressSnapshot : Number(log.progressSnapshot);
+    if (snap !== 100) continue;
+    if (!completedCategoryByTask.has(log.taskId)) {
+      completedCategoryByTask.set(log.taskId, taskCategoryForLog(log, taskById));
+    }
+  }
+  const total = completedCategoryByTask.size;
+  if (total === 0) return [];
+
+  const byCat = new Map<ChartWorkloadCategory, number>();
+  for (const cat of completedCategoryByTask.values()) {
+    byCat.set(cat, (byCat.get(cat) ?? 0) + 1);
+  }
+
+  const out: DayTimelineSegment[] = [];
+  for (const cat of DAY_TIMELINE_CATEGORY_ORDER) {
+    const n = byCat.get(cat) ?? 0;
+    if (n === 0) continue;
+    out.push({
+      id: `day-${day}-${cat}`,
+      category: cat,
+      hours: (n / total) * HOURS_IN_DAY,
+      completedInCategory: n,
+      completedDayTotal: total,
+    });
+  }
+  return out;
+}
+
+/**
  * Протягивает суммарную длительность сегментов до суток (как распределение «Хронология дня» по завершённым задачам),
  * сохраняя пропорции миксов категорий — нужно для просмотра коллеги по таймлогам.
  */

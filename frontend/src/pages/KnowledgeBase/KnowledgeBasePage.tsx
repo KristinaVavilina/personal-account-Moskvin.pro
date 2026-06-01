@@ -44,6 +44,8 @@ import {
   fetchQuickLinksByUser,
 } from '../../api/knowledgeBase';
 import { resolveDevUserId } from '../../api/devUser';
+import { canManage } from '../../constants/userRoles';
+import { useUserStore } from '../../store/useUserStore';
 import { USE_KNOWLEDGE_BASE_MOCK } from '../../config';
 import type { KBItemRequest, KBItemResponse } from '../../types/knowledgeBaseApi';
 import { ItemType } from '../../types/knowledgeBaseApi';
@@ -166,18 +168,17 @@ const IconMoreHorizontal = () => (
   </svg>
 );
 
-export type TreeNodeMenuAction = 'create-folder' | 'create-file' | 'rename' | 'archive';
+export type TreeNodeMenuAction = 'create-folder' | 'create-file' | 'rename' | 'delete';
 
 // ─── Дерево ──────────────────────────────────────────────────────────────────
 
 interface TreeNodeRowMenuProps {
   node: KnowledgeNode;
   variant: 'folder' | 'file';
-  archiveMenuLabel: string;
   onAction?: (action: TreeNodeMenuAction, node: KnowledgeNode) => void;
 }
 
-const TreeNodeRowMenu = ({ node, variant, archiveMenuLabel, onAction }: TreeNodeRowMenuProps) => (
+const TreeNodeRowMenu = ({ node, variant, onAction }: TreeNodeRowMenuProps) => (
   <DropdownMenu.Root modal={false}>
     <DropdownMenu.Trigger asChild>
       <button
@@ -219,8 +220,8 @@ const TreeNodeRowMenu = ({ node, variant, archiveMenuLabel, onAction }: TreeNode
         <DropdownMenu.Item className="kb-tree__menu-item" onSelect={() => onAction?.('rename', node)}>
           Переименовать
         </DropdownMenu.Item>
-        <DropdownMenu.Item className="kb-tree__menu-item" onSelect={() => onAction?.('archive', node)}>
-          {archiveMenuLabel}
+        <DropdownMenu.Item className="kb-tree__menu-item" onSelect={() => onAction?.('delete', node)}>
+          Удалить
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Portal>
@@ -233,7 +234,8 @@ interface TreeNodeProps {
   expanded: Set<string>;
   selectedId: string | null;
   query: string;
-  archiveMenuLabel: string;
+  /** Доступны ли действия редактирования (создание/переименование/удаление). */
+  canEdit: boolean;
   onToggle: (id: string) => void;
   onOpenFile: (file: KnowledgeFile) => void;
   onTreeMenuAction?: (action: TreeNodeMenuAction, node: KnowledgeNode) => void;
@@ -259,7 +261,7 @@ const TreeNode = ({
   expanded,
   selectedId,
   query,
-  archiveMenuLabel,
+  canEdit,
   onToggle,
   onOpenFile,
   onTreeMenuAction,
@@ -280,14 +282,11 @@ const TreeNode = ({
             <HighlightedLabel text={node.name} query={query} />
           </span>
         </button>
-        <div className="kb-tree__row-actions">
-          <TreeNodeRowMenu
-            node={node}
-            variant="file"
-            archiveMenuLabel={archiveMenuLabel}
-            onAction={onTreeMenuAction}
-          />
-        </div>
+        {canEdit && (
+          <div className="kb-tree__row-actions">
+            <TreeNodeRowMenu node={node} variant="file" onAction={onTreeMenuAction} />
+          </div>
+        )}
       </div>
     );
   }
@@ -312,14 +311,11 @@ const TreeNode = ({
             <HighlightedLabel text={node.name} query={query} />
           </span>
         </button>
-        <div className="kb-tree__row-actions">
-          <TreeNodeRowMenu
-            node={node}
-            variant="folder"
-            archiveMenuLabel={archiveMenuLabel}
-            onAction={onTreeMenuAction}
-          />
-        </div>
+        {canEdit && (
+          <div className="kb-tree__row-actions">
+            <TreeNodeRowMenu node={node} variant="folder" onAction={onTreeMenuAction} />
+          </div>
+        )}
       </div>
       {isOpen && (
         <div className="kb-tree__children">
@@ -331,7 +327,7 @@ const TreeNode = ({
               expanded={expanded}
               selectedId={selectedId}
               query={query}
-              archiveMenuLabel={archiveMenuLabel}
+              canEdit={canEdit}
               onToggle={onToggle}
               onOpenFile={onOpenFile}
               onTreeMenuAction={onTreeMenuAction}
@@ -422,6 +418,8 @@ interface DocEditorProps {
   file: KnowledgeFile;
   html: string;
   isBookmarked: boolean;
+  /** Доступно ли редактирование содержимого. Если `false` — только просмотр. */
+  canEdit: boolean;
   onSave: (html: string) => void | Promise<void>;
   onToggleBookmark: () => void;
   onClose: () => void;
@@ -452,7 +450,7 @@ const ImageWithPaste = Image.extend({
   },
 });
 
-const DocEditor = ({ file, html, isBookmarked, onSave, onToggleBookmark, onClose }: DocEditorProps) => {
+const DocEditor = ({ file, html, isBookmarked, canEdit, onSave, onToggleBookmark, onClose }: DocEditorProps) => {
   const [isDirty, setIsDirty] = useState(false);
 
   // useEditor пересоздаёт инстанс при смене file.id, поэтому история TipTap
@@ -479,6 +477,7 @@ const DocEditor = ({ file, html, isBookmarked, onSave, onToggleBookmark, onClose
         }),
       ],
       content: html,
+      editable: canEdit,
       editorProps: {
         attributes: {
           class: 'kb-editor__content',
@@ -487,7 +486,7 @@ const DocEditor = ({ file, html, isBookmarked, onSave, onToggleBookmark, onClose
       },
       onUpdate: () => setIsDirty(true),
     },
-    [file.id, html],
+    [file.id, html, canEdit],
   );
 
   useEffect(() => {
@@ -538,14 +537,16 @@ const DocEditor = ({ file, html, isBookmarked, onSave, onToggleBookmark, onClose
           )}
         </div>
         <div className="kb-editor__header-actions">
-          <button
-            type="button"
-            className={cn('kb-editor__save', { 'kb-editor__save--disabled': !isDirty })}
-            onClick={handleSave}
-            disabled={!isDirty}
-          >
-            Сохранить
-          </button>
+          {canEdit && (
+            <button
+              type="button"
+              className={cn('kb-editor__save', { 'kb-editor__save--disabled': !isDirty })}
+              onClick={handleSave}
+              disabled={!isDirty}
+            >
+              Сохранить
+            </button>
+          )}
           <button
             type="button"
             className="kb-editor__icon-btn kb-editor__icon-btn--round"
@@ -560,7 +561,7 @@ const DocEditor = ({ file, html, isBookmarked, onSave, onToggleBookmark, onClose
       <div className="kb-editor__body">
         <EditorContent editor={editor} />
 
-        {editor && (
+        {canEdit && editor && (
           <BubbleMenu
             editor={editor}
             className="kb-editor__toolbar"
@@ -658,26 +659,28 @@ const DocEditor = ({ file, html, isBookmarked, onSave, onToggleBookmark, onClose
       </div>
 
       <footer className="kb-editor__footer">
-        <div className="kb-editor__footer-group">
-          <button
-            type="button"
-            className="kb-editor__icon-btn kb-editor__icon-btn--round"
-            aria-label="Отменить"
-            onClick={() => editor?.chain().focus().undo().run()}
-            disabled={!editor?.can().undo()}
-          >
-            <img src={undoIcon} alt="" aria-hidden="true" className="kb-editor__icon-img" />
-          </button>
-          <button
-            type="button"
-            className="kb-editor__icon-btn kb-editor__icon-btn--round"
-            aria-label="Повторить"
-            onClick={() => editor?.chain().focus().redo().run()}
-            disabled={!editor?.can().redo()}
-          >
-            <img src={redoIcon} alt="" aria-hidden="true" className="kb-editor__icon-img" />
-          </button>
-        </div>
+        {canEdit && (
+          <div className="kb-editor__footer-group">
+            <button
+              type="button"
+              className="kb-editor__icon-btn kb-editor__icon-btn--round"
+              aria-label="Отменить"
+              onClick={() => editor?.chain().focus().undo().run()}
+              disabled={!editor?.can().undo()}
+            >
+              <img src={undoIcon} alt="" aria-hidden="true" className="kb-editor__icon-img" />
+            </button>
+            <button
+              type="button"
+              className="kb-editor__icon-btn kb-editor__icon-btn--round"
+              aria-label="Повторить"
+              onClick={() => editor?.chain().focus().redo().run()}
+              disabled={!editor?.can().redo()}
+            >
+              <img src={redoIcon} alt="" aria-hidden="true" className="kb-editor__icon-img" />
+            </button>
+          </div>
+        )}
         <button
           type="button"
           className={cn('kb-editor__icon-btn kb-editor__icon-btn--round', {
@@ -791,7 +794,8 @@ const ArchiveRow = ({ item, query, onRestore, onDelete }: ArchiveRowProps) => {
 // ─── Страница ────────────────────────────────────────────────────────────────
 
 export const KnowledgeBasePage = () => {
-  const treeMenuArchiveLabel = USE_KNOWLEDGE_BASE_MOCK ? 'В архив' : 'Удалить…';
+  const apiRole = useUserStore((s) => s.apiRole);
+  const canEdit = canManage(apiRole);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('base');
@@ -1080,6 +1084,61 @@ export const KnowledgeBasePage = () => {
     }
   }, []);
 
+  const handleCreateFolder = useCallback(
+    async (parentId: string | null) => {
+      const nameIn = window.prompt('Имя папки', 'Новая папка');
+      if (nameIn === null) return;
+      const name = nameIn.trim();
+      if (!name) return;
+      if (USE_KNOWLEDGE_BASE_MOCK) {
+        const newId = crypto.randomUUID();
+        setActiveKbItems((rows) => [
+          ...rows,
+          { id: newId, parentId, type: ItemType.Folder, title: name, content: null },
+        ]);
+      } else {
+        try {
+          await createKb({ parentId, type: ItemType.Folder, title: name, content: null });
+          await reloadFromApi();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      if (parentId) {
+        setExpanded((prev) => new Set(prev).add(parentId));
+      }
+    },
+    [reloadFromApi],
+  );
+
+  const handleCreateFile = useCallback(
+    async (parentId: string | null) => {
+      const nameIn = window.prompt('Имя файла', 'Без названия');
+      if (nameIn === null) return;
+      const name = nameIn.trim();
+      if (!name) return;
+      const blank = DEFAULT_FILE_CONTENT.trim();
+      if (USE_KNOWLEDGE_BASE_MOCK) {
+        const newId = crypto.randomUUID();
+        setActiveKbItems((rows) => [
+          ...rows,
+          { id: newId, parentId, type: ItemType.Article, title: name, content: blank },
+        ]);
+      } else {
+        try {
+          await createKb({ parentId, type: ItemType.Article, title: name, content: blank });
+          await reloadFromApi();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      if (parentId) {
+        setExpanded((prev) => new Set(prev).add(parentId));
+      }
+    },
+    [reloadFromApi],
+  );
+
   const handleTreeMenuAction = useCallback(
     async (action: TreeNodeMenuAction, node: KnowledgeNode) => {
       if (action === 'rename') {
@@ -1108,83 +1167,28 @@ export const KnowledgeBasePage = () => {
         if (node.type !== 'folder') return;
         const parent = node as KnowledgeFolder;
         if (action === 'create-folder') {
-          const nameIn = window.prompt('Имя папки', 'Новая папка');
-          if (nameIn === null) return;
-          const name = nameIn.trim();
-          if (!name) return;
-          if (USE_KNOWLEDGE_BASE_MOCK) {
-            const newId = crypto.randomUUID();
-            setActiveKbItems((rows) => [
-              ...rows,
-              { id: newId, parentId: parent.id, type: ItemType.Folder, title: name, content: null },
-            ]);
-          } else {
-            try {
-              await createKb({ parentId: parent.id, type: ItemType.Folder, title: name, content: null });
-              await reloadFromApi();
-            } catch (e) {
-              console.error(e);
-            }
-          }
-          setExpanded((prev) => new Set(prev).add(parent.id));
-          return;
-        }
-        const nameIn = window.prompt('Имя файла', 'Без названия');
-        if (nameIn === null) return;
-        const name = nameIn.trim();
-        if (!name) return;
-        const blank = DEFAULT_FILE_CONTENT.trim();
-        if (USE_KNOWLEDGE_BASE_MOCK) {
-          const newId = crypto.randomUUID();
-          setActiveKbItems((rows) => [
-            ...rows,
-            { id: newId, parentId: parent.id, type: ItemType.Article, title: name, content: blank },
-          ]);
+          await handleCreateFolder(parent.id);
         } else {
-          try {
-            await createKb({ parentId: parent.id, type: ItemType.Article, title: name, content: blank });
-            await reloadFromApi();
-          } catch (e) {
-            console.error(e);
-          }
+          await handleCreateFile(parent.id);
         }
-        setExpanded((prev) => new Set(prev).add(parent.id));
         return;
       }
 
-      if (action !== 'archive') return;
-
-      if (USE_KNOWLEDGE_BASE_MOCK) {
-        const ids = new Set(kbCollectSubtreeIds(node.id, activeKbItems));
-        const toMove = activeKbItems.filter((i) => ids.has(i.id));
-        setActiveKbItems((a) => a.filter((i) => !ids.has(i.id)));
-        setArchivedKbItems((ar) => [...toMove, ...ar]);
-        if (node.type === 'file') {
-          setBookmarks((b) => {
-            const n = new Set(b);
-            n.delete(node.id);
-            return n;
-          });
-          setOpenedFile((o) => (o?.id === node.id ? null : o));
-        } else {
-          const nested = collectFileIdsInSubtree(node);
-          setBookmarks((b) => {
-            const n = new Set(b);
-            nested.forEach((fid) => n.delete(fid));
-            return n;
-          });
-          setOpenedFile((o) => (o && nested.includes(o.id) ? null : o));
-        }
-        return;
-      }
+      if (action !== 'delete') return;
 
       const ok = window.confirm(
         'Удалить элемент и всё содержимое с сервера? В текущем API нет переноса в архив — запись будет удалена.',
       );
       if (!ok) return;
+
       try {
-        await deleteSubtreeRemote(node.id, activeKbItems);
-        await reloadFromApi();
+        if (USE_KNOWLEDGE_BASE_MOCK) {
+          const ids = new Set(kbCollectSubtreeIds(node.id, activeKbItems));
+          setActiveKbItems((a) => a.filter((i) => !ids.has(i.id)));
+        } else {
+          await deleteSubtreeRemote(node.id, activeKbItems);
+          await reloadFromApi();
+        }
         if (node.type === 'file') {
           setBookmarks((b) => {
             const n = new Set(b);
@@ -1205,10 +1209,15 @@ export const KnowledgeBasePage = () => {
         console.error(e);
       }
     },
-    [activeKbItems, deleteSubtreeRemote, reloadFromApi, toKbRequest],
+    [activeKbItems, deleteSubtreeRemote, handleCreateFile, handleCreateFolder, reloadFromApi, toKbRequest],
   );
 
-  const isArchive = activeTab === 'archive';
+  const isArchive = canEdit && activeTab === 'archive';
+
+  const visibleTabs = useMemo(
+    () => (canEdit ? WORKSPACE_TABS : WORKSPACE_TABS.filter((t) => t.id !== 'archive')),
+    [canEdit],
+  );
 
   const renderWorkspaceContent = () => {
     if (openedFile) {
@@ -1217,6 +1226,7 @@ export const KnowledgeBasePage = () => {
           file={openedFile}
           html={openedFileHtml}
           isBookmarked={bookmarks.has(openedFile.id)}
+          canEdit={canEdit}
           onSave={handleSaveArticle}
           onToggleBookmark={() => void toggleBookmark(openedFile.id)}
           onClose={() => setOpenedFile(null)}
@@ -1356,37 +1366,59 @@ export const KnowledgeBasePage = () => {
             </div>
           )
         ) : (
-          <div className="kb-tree" role="tree" aria-busy={isKbLoading}>
-            <div className="kb-tree__inner-shadow" aria-hidden="true" />
-            <div className={cn('kb-tree__inner', isKbLoading && 'kb-tree__inner--busy')}>
-              {isKbLoading ? (
-                <div className="kb-panel__spinner" aria-label="Загрузка" />
-              ) : filteredTree.length === 0 ? (
-                <div className="kb-tree__empty">Ничего не найдено</div>
-              ) : (
-                filteredTree.map((node) => (
-                  <TreeNode
-                    key={node.id}
-                    node={node}
-                    depth={0}
-                    expanded={effectiveExpanded}
-                    selectedId={openedFile?.id ?? null}
-                    query={searchQuery}
-                    archiveMenuLabel={treeMenuArchiveLabel}
-                    onToggle={handleToggle}
-                    onOpenFile={setOpenedFile}
-                    onTreeMenuAction={handleTreeMenuAction}
-                  />
-                ))
-              )}
+          <div className="kb-sidebar-body">
+            <div className="kb-tree" role="tree" aria-busy={isKbLoading}>
+              <div className="kb-tree__inner-shadow" aria-hidden="true" />
+              <div className={cn('kb-tree__inner', isKbLoading && 'kb-tree__inner--busy')}>
+                {isKbLoading ? (
+                  <div className="kb-panel__spinner" aria-label="Загрузка" />
+                ) : filteredTree.length === 0 ? (
+                  <div className="kb-tree__empty">Ничего не найдено</div>
+                ) : (
+                  filteredTree.map((node) => (
+                    <TreeNode
+                      key={node.id}
+                      node={node}
+                      depth={0}
+                      expanded={effectiveExpanded}
+                      selectedId={openedFile?.id ?? null}
+                      query={searchQuery}
+                      canEdit={canEdit}
+                      onToggle={handleToggle}
+                      onOpenFile={setOpenedFile}
+                      onTreeMenuAction={handleTreeMenuAction}
+                    />
+                  ))
+                )}
+              </div>
             </div>
+            {canEdit && (
+              <div className="kb-tree__actions">
+                <button
+                  type="button"
+                  className="kb-tree__action-btn"
+                  disabled={isKbLoading}
+                  onClick={() => void handleCreateFile(null)}
+                >
+                  Создать файл
+                </button>
+                <button
+                  type="button"
+                  className="kb-tree__action-btn"
+                  disabled={isKbLoading}
+                  onClick={() => void handleCreateFolder(null)}
+                >
+                  Создать папку
+                </button>
+              </div>
+            )}
           </div>
         )}
       </aside>
 
       <section className="kb-workspace" aria-label="Документы базы знаний">
         <div className="kb-workspace__tabs" role="tablist" aria-label="Разделы">
-          {WORKSPACE_TABS.map(({ id, label }) => (
+          {visibleTabs.map(({ id, label }) => (
             <button
               key={id}
               type="button"

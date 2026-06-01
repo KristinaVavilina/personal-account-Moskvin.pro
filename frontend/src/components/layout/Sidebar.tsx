@@ -6,12 +6,16 @@ import employeesIcon from '../../assets/icons/employees-icon.svg';
 import renderFarmIcon from '../../assets/icons/render-farm-icon.svg';
 import profileIcon from '../../assets/icons/profile-icon.svg';
 import { ROUTE } from '../../constants';
+import { canManage } from '../../constants/userRoles';
+import { useUserStore } from '../../store/useUserStore';
 import { isDashboardPath } from '../../utils';
 import './Sidebar.scss';
 
 export const Sidebar = () => {
   const { pathname } = useLocation();
   const isDashboardActive = isDashboardPath(pathname);
+  const apiRole = useUserStore((s) => s.apiRole);
+  const canViewEmployees = canManage(apiRole);
 
   return (
     <aside className="sidebar">
@@ -42,15 +46,17 @@ export const Sidebar = () => {
         >
           <img src={knowledgeBaseIcon} alt="База знаний" />
         </NavLink>
-        <NavLink
-          to={ROUTE.EMPLOYEES}
-          className={({ isActive }) =>
-            'sidebar__item' + (isActive ? ' sidebar__item--active' : '')
-          }
-          aria-label="Сотрудники"
-        >
-          <img src={employeesIcon} alt="Сотрудники" />
-        </NavLink>
+        {canViewEmployees && (
+          <NavLink
+            to={ROUTE.EMPLOYEES}
+            className={({ isActive }) =>
+              'sidebar__item' + (isActive ? ' sidebar__item--active' : '')
+            }
+            aria-label="Сотрудники"
+          >
+            <img src={employeesIcon} alt="Сотрудники" />
+          </NavLink>
+        )}
         <NavLink
           to={ROUTE.RENDER_FARM}
           className={({ isActive }) =>
