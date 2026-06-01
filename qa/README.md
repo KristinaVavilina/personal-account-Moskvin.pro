@@ -5,8 +5,13 @@
 Из **корня репозитория**, после поднятия стека:
 
 ```bash
+# локально
 docker compose up -d --build
 docker compose --profile seed run --rm seed
+
+# сервер 81.26.177.173
+docker compose -f docker-compose.yml -f docker-compose.server.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.server.yml --profile seed run --rm seed
 ```
 
 Сервис `seed`:
