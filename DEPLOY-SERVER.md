@@ -1,14 +1,16 @@
-# Деплой на сервер 81.26.177.173
+# Деплой на публичный сервер (VPS)
 
-Изменения в коде **бэкенда не требуются**: фронт ходит в `/api/*` через nginx, API доступен только внутри Docker.
+Фронт **не привязан к IP**: запросы `fetch('/api/...')` идут на тот же host, с которого открыт сайт. Меняется только адрес в браузере.
+
+Укажите свой хост в `deploy.env` (см. [deploy.env.example](./deploy.env.example)).
 
 ## Требования
 
-- Linux с Docker и Docker Compose v2
-- Открыт входящий **TCP 80** (firewall / security group)
-- Git, клон репозитория на сервер
+- Ubuntu (или другой Linux) с Docker и Docker Compose v2
+- Открыт входящий **TCP 80**
+- Git, клон репозитория
 
-## Команды на сервере
+## Первый запуск
 
 ```bash
 git clone <url-репозитория> personal-account-Moskvin.pro
@@ -18,16 +20,26 @@ docker compose -f docker-compose.yml -f docker-compose.server.yml up -d --build
 docker compose -f docker-compose.yml -f docker-compose.server.yml --profile seed run --rm seed
 ```
 
+Откройте в браузере: `http://<PUBLIC_HOST>` (IP или домен сервера).
+
+## Обновление
+
+```bash
+cd personal-account-Moskvin.pro
+git pull
+docker compose -f docker-compose.yml -f docker-compose.server.yml up -d --build
+```
+
 ## Доступ
 
 | Что | URL |
 |-----|-----|
-| Сайт | http://81.26.177.173 |
-| API для браузера | http://81.26.177.173/api/... (прокси nginx) |
+| Сайт | `http://<ваш-ip-или-домен>` |
+| API | `http://<ваш-ip-или-домен>/api/...` (прокси nginx) |
 
-Порты **8080**, **5433**, **5341** с `docker-compose.server.yml` **не публикуются** наружу.
+С `docker-compose.server.yml` наружу публикуется только **порт 80**.
 
-## Firewall (пример UFW)
+## Firewall (UFW)
 
 ```bash
 sudo ufw allow 22/tcp
@@ -35,29 +47,12 @@ sudo ufw allow 80/tcp
 sudo ufw enable
 ```
 
-## Вход в приложение
+В Yandex Cloud / другом облаке — откройте **80/tcp** в security group.
 
-До подключения реального логина через API: mock-логин на фронте **123** / **123** (см. `frontend/src/constants`).
+## Вход
 
-После сида в кабинете будут демо-пользователи из `qa/seed_useful.py`.
-
-## Обновление
-
-```bash
-git pull
-docker compose -f docker-compose.yml -f docker-compose.server.yml up -d --build
-```
-
-Только фронт:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.server.yml up -d --build frontend
-```
-
-## Локальная разработка
-
-Файл `docker-compose.server.yml` для локальной машины **не обязателен** — используйте обычный `docker compose up` (порты 8080/5433 останутся для отладки).
+Mock-логин на фронте: **123** / **123**. После сида — демо-данные из `qa/seed_useful.py`.
 
 ## HTTPS и домен
 
-Для IP **81.26.177.173** обычно достаточно HTTP. Если позже появится домен — TLS на reverse proxy (Caddy/nginx) перед контейнером `frontend:80`.
+При появлении домена — TLS на reverse proxy перед `frontend:80`. Пересборка фронта из‑за смены IP/домена **не нужна**.

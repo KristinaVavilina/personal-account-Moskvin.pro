@@ -59,9 +59,9 @@ npm run preview
 | `nginx.default.conf` | SPA fallback, gzip, прокси `/api/`, кэш статики |
 | `.dockerignore` | исключает `node_modules`, `dist` из контекста сборки |
 
-## Публичный сервер (81.26.177.173)
+## Публичный сервер (любой IP / домен)
 
-Сборка та же; nginx принимает запросы с `server_name 81.26.177.173` (см. `nginx.default.conf`).
+Сборка та же. Nginx: `server_name _` — принимает любой Host. API — относительные `/api/*`, пересборка при смене IP не нужна.
 
 Из корня репозитория:
 

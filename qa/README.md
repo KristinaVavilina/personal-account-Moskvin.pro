@@ -9,7 +9,7 @@
 docker compose up -d --build
 docker compose --profile seed run --rm seed
 
-# сервер 81.26.177.173
+# публичный VPS (любой IP)
 docker compose -f docker-compose.yml -f docker-compose.server.yml up -d --build
 docker compose -f docker-compose.yml -f docker-compose.server.yml --profile seed run --rm seed
 ```

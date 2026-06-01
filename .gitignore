@@ -442,3 +442,6 @@ dist-ssr
 *.sln
 *.sw?
 
+# Локальные параметры сервера (шаблон: deploy.env.example)
+deploy.env
+
