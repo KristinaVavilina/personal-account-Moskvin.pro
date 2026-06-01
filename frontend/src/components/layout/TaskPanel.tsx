@@ -15,7 +15,7 @@ import {
   updateTask,
 } from '../../api/tasks';
 import { createTimeLog } from '../../api/timeLogs';
-import { fetchTaskTypes, taskTypeLabelToTypeIdString } from '../../api/taskTypes';
+import { ensureTaskTypeIdString } from '../../api/taskTypes';
 import { USE_PROGRESS_MOCK } from '../../config';
 import { resolveDevUserId } from '../../api/devUser';
 import { normalizeReportTimeForApi } from '../../utils/reportTimeInput';
@@ -136,9 +136,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
         void (async () => {
           try {
             const raw = await fetchTaskById(payload.taskId);
-            const types = await fetchTaskTypes();
-            const typeId = taskTypeLabelToTypeIdString(types, payload.taskType);
-            if (!typeId) return;
+            const typeId = await ensureTaskTypeIdString(payload.taskType);
             await updateTask(payload.taskId, {
               userId: raw.userId,
               typeId,
@@ -220,9 +218,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
         try {
           if (!userId) throw new Error('Не удалось определить пользователя');
           const raw = await fetchTaskById(payload.taskId);
-          const types = await fetchTaskTypes();
-          const typeId = taskTypeLabelToTypeIdString(types, payload.taskType);
-          if (!typeId) throw new Error('Тип задания не найден на сервере');
+          const typeId = await ensureTaskTypeIdString(payload.taskType);
           await updateTask(payload.taskId, {
             userId: raw.userId,
             typeId,
@@ -355,9 +351,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
               try {
                 const userId = await resolveDevUserId();
                 if (!userId) throw new Error('Не удалось определить пользователя');
-                const types = await fetchTaskTypes();
-                const typeId = taskTypeLabelToTypeIdString(types, task.taskType);
-                if (!typeId) throw new Error('Тип задания не найден на сервере');
+                const typeId = await ensureTaskTypeIdString(task.taskType);
                 const newId = await createTask({
                   userId,
                   typeId,
@@ -389,9 +383,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
             if (!USE_PROGRESS_MOCK) {
               try {
                 const raw = await fetchTaskById(updated.id);
-                const types = await fetchTaskTypes();
-                const typeId = taskTypeLabelToTypeIdString(types, updated.taskType);
-                if (!typeId) throw new Error('Тип задания не найден на сервере');
+                const typeId = await ensureTaskTypeIdString(updated.taskType);
                 await updateTask(updated.id, {
                   userId: raw.userId,
                   typeId,
@@ -399,7 +391,6 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
                   description: updated.description ?? '',
                   currentProgress: updated.progress,
                 });
-                await onTaskListRefresh?.();
                 notifySuccess(NOTIFY_SUCCESS.taskUpdated);
               } catch (e) {
                 notifyError(e, 'Не удалось сохранить задание');
@@ -408,6 +399,7 @@ export const TaskPanel = forwardRef<TaskPanelHandle, TaskPanelProps>(function Ta
             }
             dispatch({ type: 'UPDATE_TASK', task: updated });
             notifyIfCompleted(updated);
+            await onTaskListRefresh?.();
           }}
           onDelete={handleDeleteTask}
         />

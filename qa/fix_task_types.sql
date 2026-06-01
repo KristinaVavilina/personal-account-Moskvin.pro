@@ -1,9 +1,5 @@
--- Приводим справочник TaskType в БД к 5 категориям фронта и перепривязываем задачи.
--- Причина: фронт показывает фиксированные категории (Задачи/Обсуждения/Рутина/Обучение/Прочее),
--- а в БД были производственные типы (Моделирование, Анимация, ...), из-за чего выбор
--- любого типа кроме «Задачи» давал «Тип задания не найден на сервере».
--- ВАЖНО: FK tasks.type_id -> task_types(id) ON DELETE CASCADE,
---        поэтому СНАЧАЛА перепривязываем задачи, и только потом удаляем старые типы.
+-- Справочник task_types: ровно 5 категорий (как TASK_TYPES на фронте).
+-- Задачи на прочих типах перепривязываются к «Задачи», лишние типы удаляются.
 -- Запуск:
 --   docker compose cp qa/fix_task_types.sql db:/tmp/fix_types.sql
 --   docker compose exec -T db psql -U postgres -d MoskvinDb -f /tmp/fix_types.sql
@@ -11,7 +7,6 @@
 
 BEGIN;
 
--- 1. Создаём недостающие категорийные типы (идемпотентно).
 INSERT INTO task_types (name, color)
 SELECT v.name, v.color
 FROM (VALUES
@@ -23,42 +18,24 @@ FROM (VALUES
 ) AS v(name, color)
 WHERE NOT EXISTS (SELECT 1 FROM task_types tt WHERE tt.name = v.name);
 
--- 2. Перепривязываем задачи с производственных типов на категории.
 DO $$
 DECLARE
   t_task int;
-  t_disc int;
-  t_rout int;
-  t_edu  int;
 BEGIN
-  SELECT id INTO t_task FROM task_types WHERE name = 'Задачи'     ORDER BY id LIMIT 1;
-  SELECT id INTO t_disc FROM task_types WHERE name = 'Обсуждения' ORDER BY id LIMIT 1;
-  SELECT id INTO t_rout FROM task_types WHERE name = 'Рутина'     ORDER BY id LIMIT 1;
-  SELECT id INTO t_edu  FROM task_types WHERE name = 'Обучение'   ORDER BY id LIMIT 1;
+  SELECT id INTO t_task FROM task_types WHERE name = 'Задачи' ORDER BY id LIMIT 1;
 
   UPDATE tasks SET type_id = t_task
-   WHERE type_id IN (SELECT id FROM task_types
-                     WHERE name IN ('Моделирование', 'Текстурирование', 'Анимация', 'Композитинг'));
-
-  UPDATE tasks SET type_id = t_rout
-   WHERE type_id IN (SELECT id FROM task_types
-                     WHERE name IN ('Рендеринг', 'Ретопология'));
-
-  UPDATE tasks SET type_id = t_disc
-   WHERE type_id IN (SELECT id FROM task_types WHERE name = 'Ревью');
-
-  UPDATE tasks SET type_id = t_edu
-   WHERE type_id IN (SELECT id FROM task_types WHERE name = 'Концепт-арт');
+   WHERE type_id IN (
+     SELECT id FROM task_types
+     WHERE name NOT IN ('Задачи', 'Обсуждения', 'Рутина', 'Обучение', 'Прочее')
+   );
 END $$;
 
--- 3. Удаляем старые производственные типы (задач на них уже нет).
 DELETE FROM task_types
- WHERE name IN ('Моделирование', 'Текстурирование', 'Анимация', 'Рендеринг',
-                'Композитинг', 'Ревью', 'Концепт-арт', 'Ретопология');
+ WHERE name NOT IN ('Задачи', 'Обсуждения', 'Рутина', 'Обучение', 'Прочее');
 
 COMMIT;
 
--- Контроль
 SELECT tt.id, tt.name, count(t.id) AS tasks
 FROM task_types tt
 LEFT JOIN tasks t ON t.type_id = tt.id

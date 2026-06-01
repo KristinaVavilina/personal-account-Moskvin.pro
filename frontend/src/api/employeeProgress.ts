@@ -20,8 +20,7 @@ import {
 } from '../utils/progressDashboardTransform';
 import type { DayTimelineSegment } from '../mocks/dayTimelineMock';
 import type { WeekBalanceEntry } from '../mocks/weekBalanceMock';
-import type { ApiTaskResponse } from './tasks';
-import { fetchUserTasksRaw, countCompletedTasksInMonthViaClient } from './tasks';
+import { buildTaskLookupMap, fetchUserTasksRaw, countCompletedTasksInMonthViaClient } from './tasks';
 
 export async function fetchEmployeeCompletedTasksCountForMonth(
   userId: string,
@@ -85,9 +84,7 @@ export async function fetchEmployeeDayTimelineSegments(
     fetchUserTasksRaw(userId, false),
     fetchUserTasksRaw(userId, true),
   ]);
-  const taskById = new Map<string, ApiTaskResponse>(
-    [...active, ...archived].map((t) => [t.id, t]),
-  );
+  const taskById = buildTaskLookupMap([...active, ...archived]);
   const logs = await fetchEmployeeTimeLogsInRangeRaw(userId, d, d);
   return timeLogsToDayCompletionSegments(logs, taskById, dayIso);
 }
@@ -108,9 +105,7 @@ export async function fetchEmployeeWeekBalance(
     fetchUserTasksRaw(userId, false),
     fetchUserTasksRaw(userId, true),
   ]);
-  const taskById = new Map<string, ApiTaskResponse>(
-    [...active, ...archived].map((t) => [t.id, t]),
-  );
+  const taskById = buildTaskLookupMap([...active, ...archived]);
   const logs = await fetchEmployeeTimeLogsInRangeRaw(userId, start, end);
   return timeLogsToWeekBalanceEntries(logs, taskById, start, end);
 }

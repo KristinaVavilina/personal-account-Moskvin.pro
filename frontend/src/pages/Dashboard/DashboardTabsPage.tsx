@@ -30,12 +30,15 @@ export const DashboardTabsPage = () => {
   const [progressStatsRevision, setProgressStatsRevision] = useState(0);
   const taskPanelRef = useRef<TaskPanelHandle | null>(null);
 
+  const bumpProgressCharts = useCallback(() => {
+    setProgressStatsRevision((n) => n + 1);
+  }, []);
+
   const refreshTasksAndProgressStatistics = useCallback(async (completedTask?: TaskListItem) => {
     if (completedTask?.progress === 100) {
       useDayTimelineCompletionsStore.getState().recordCompletedTask(completedTask);
       useProgressStatsSessionStore.getState().incrementCompletedMonthOptimistic();
     }
-    setProgressStatsRevision((n) => n + 1);
     try {
       const [active, archived] = await Promise.all([
         fetchActiveTasksForDashboard(),
@@ -45,12 +48,12 @@ export const DashboardTabsPage = () => {
       setArchivedItems(archived);
     } catch {
       /* список заданий не трогаем */
+    } finally {
+      bumpProgressCharts();
     }
-  }, []);
+  }, [bumpProgressCharts]);
 
   const refreshTaskListOnly = useCallback(async () => {
-    // Отчёт/правка задачи создаёт таймлог — обновляем и виджеты «Прогресса» (в т.ч. «Баланс недели»).
-    setProgressStatsRevision((n) => n + 1);
     try {
       const [active, archived] = await Promise.all([
         fetchActiveTasksForDashboard(),
@@ -60,8 +63,10 @@ export const DashboardTabsPage = () => {
       setArchivedItems(archived);
     } catch {
       /* ignore */
+    } finally {
+      bumpProgressCharts();
     }
-  }, []);
+  }, [bumpProgressCharts]);
 
   useEffect(() => {
     let cancelled = false;
