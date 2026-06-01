@@ -13,16 +13,15 @@ import {
 import type { BenefitWorkloadPoint } from '../../mocks/benefitWorkloadMock';
 import { useBenefitWorkloadLocalStore } from '../../store/useBenefitWorkloadLocalStore';
 import { useProgressStatsSessionStore } from '../../store/useProgressStatsSessionStore';
-import { useDayTimelineCompletionsStore } from '../../store/useDayTimelineCompletionsStore';
 import { mergeBenefitWorkloadWithLocalOverride } from '../../utils/benefitWorkloadMerge';
 import { pluralRuTasks } from '../../utils';
 import {
-  aggregateSessionCompletionsToDayTimeline,
-  aggregateSessionCompletionsToWeekBalance,
-  calendarWeekBoundsLocal,
   dailyReflectionRowsToBenefitWorkloadSeries,
   formatLocalDateIso,
 } from '../../utils/progressDashboardTransform';
+import { fetchEmployeeWeekBalance, fetchEmployeeDayTimelineSegments } from '../../api/employeeProgress';
+import type { WeekBalanceEntry } from '../../mocks/weekBalanceMock';
+import type { DayTimelineSegment } from '../../mocks/dayTimelineMock';
 import { BenefitWorkloadChart } from './BenefitWorkloadChart';
 import { DayTimelineChart } from './DayTimelineChart';
 import { WeekBalanceChart } from './WeekBalanceChart';
@@ -55,17 +54,11 @@ export const ProgressPage = ({ statsRevision = 0 }: ProgressPageProps) => {
   const [statsError, setStatsError] = useState<string | null>(null);
   const todayOverride = useBenefitWorkloadLocalStore((s) => s.todayOverride);
 
-  const completionRecords = useDayTimelineCompletionsStore((s) => s.records);
-  const timelineSegments = useMemo(() => {
-    const todayIso = formatLocalDateIso(new Date());
-    return aggregateSessionCompletionsToDayTimeline(completionRecords, todayIso);
-  }, [completionRecords]);
+  // «Хронология дня» — доли по числу завершённых сегодня задач (единый источник с разделом «Сотрудники»).
+  const [timelineSegments, setTimelineSegments] = useState<DayTimelineSegment[]>([]);
 
-  const weekBalanceData = useMemo(() => {
-    const now = new Date();
-    const { start, end } = calendarWeekBoundsLocal(now);
-    return aggregateSessionCompletionsToWeekBalance(completionRecords, start, end);
-  }, [completionRecords]);
+  // «Баланс недели» — часы из таймлогов за календарную неделю (единый источник с разделом «Сотрудники»).
+  const [weekBalanceData, setWeekBalanceData] = useState<WeekBalanceEntry[]>([]);
 
   const chartDisplayData = useMemo(() => {
     const d = new Date();
@@ -162,6 +155,39 @@ export const ProgressPage = ({ statsRevision = 0 }: ProgressPageProps) => {
         }
       } finally {
         if (!cancelled) setIsStatsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [statsRevision]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const uid = await resolveDevUserId();
+        if (!uid) {
+          if (!cancelled) {
+            setWeekBalanceData([]);
+            setTimelineSegments([]);
+          }
+          return;
+        }
+        const todayIso = formatLocalDateIso(new Date());
+        const [wb, tl] = await Promise.all([
+          fetchEmployeeWeekBalance(uid, new Date()),
+          fetchEmployeeDayTimelineSegments(uid, todayIso),
+        ]);
+        if (!cancelled) {
+          setWeekBalanceData(wb);
+          setTimelineSegments(tl);
+        }
+      } catch {
+        if (!cancelled) {
+          setWeekBalanceData([]);
+          setTimelineSegments([]);
+        }
       }
     })();
     return () => {

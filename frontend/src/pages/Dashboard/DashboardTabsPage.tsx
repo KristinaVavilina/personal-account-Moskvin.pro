@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { fetchActiveTasksForDashboard } from '../../api/tasks';
+import { fetchActiveTasksForDashboard, fetchArchivedTasksForDashboard } from '../../api/tasks';
 import { useProgressStatsSessionStore } from '../../store/useProgressStatsSessionStore';
 import { useDayTimelineCompletionsStore } from '../../store/useDayTimelineCompletionsStore';
 import { PageTabs } from '../../components/layout/PageTabs';
@@ -25,6 +25,7 @@ export const DashboardTabsPage = () => {
   const [activeTab, setActiveTab] = useState<Tab>(() => getInitialTab(pathname));
   const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
   const [taskWidgetItems, setTaskWidgetItems] = useState<TaskListItem[]>([]);
+  const [archivedItems, setArchivedItems] = useState<TaskListItem[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
   const [progressStatsRevision, setProgressStatsRevision] = useState(0);
   const taskPanelRef = useRef<TaskPanelHandle | null>(null);
@@ -36,17 +37,27 @@ export const DashboardTabsPage = () => {
     }
     setProgressStatsRevision((n) => n + 1);
     try {
-      const list = await fetchActiveTasksForDashboard();
-      setTaskWidgetItems(list);
+      const [active, archived] = await Promise.all([
+        fetchActiveTasksForDashboard(),
+        fetchArchivedTasksForDashboard(),
+      ]);
+      setTaskWidgetItems(active);
+      setArchivedItems(archived);
     } catch {
       /* список заданий не трогаем */
     }
   }, []);
 
   const refreshTaskListOnly = useCallback(async () => {
+    // Отчёт/правка задачи создаёт таймлог — обновляем и виджеты «Прогресса» (в т.ч. «Баланс недели»).
+    setProgressStatsRevision((n) => n + 1);
     try {
-      const list = await fetchActiveTasksForDashboard();
-      setTaskWidgetItems(list);
+      const [active, archived] = await Promise.all([
+        fetchActiveTasksForDashboard(),
+        fetchArchivedTasksForDashboard(),
+      ]);
+      setTaskWidgetItems(active);
+      setArchivedItems(archived);
     } catch {
       /* ignore */
     }
@@ -57,8 +68,14 @@ export const DashboardTabsPage = () => {
     (async () => {
       setTasksLoading(true);
       try {
-        const list = await fetchActiveTasksForDashboard();
-        if (!cancelled) setTaskWidgetItems(list);
+        const [active, archived] = await Promise.all([
+          fetchActiveTasksForDashboard(),
+          fetchArchivedTasksForDashboard(),
+        ]);
+        if (!cancelled) {
+          setTaskWidgetItems(active);
+          setArchivedItems(archived);
+        }
       } catch {
         /* ignore */
       } finally {
@@ -129,6 +146,7 @@ export const DashboardTabsPage = () => {
         <TaskPanel
           ref={taskPanelRef}
           tasks={taskWidgetItems}
+          archivedTasks={archivedItems}
           isLoading={tasksLoading}
           initialArchivedEmpty
           onTaskListRefresh={refreshTaskListOnly}

@@ -1,8 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Toaster } from 'sonner'
+import { validateProductionBuild } from './config/env'
 import './assets/styles/global.scss'
 import App from './App.tsx'
+
+validateProductionBuild()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -16,7 +16,7 @@ import type { BenefitWorkloadPoint } from '../../mocks/benefitWorkloadMock';
 import type { DayTimelineSegment } from '../../mocks/dayTimelineMock';
 import type { WeekBalanceEntry } from '../../mocks/weekBalanceMock';
 import { fetchEmployeesDirectory, type ApiUserResponse } from '../../api/users';
-import { apiTaskToListItem, fetchUserTasksRaw } from '../../api/tasks';
+import { apiTaskToListItem, fetchUserTasksRaw, normalizeTaskProgress } from '../../api/tasks';
 import type { TaskListItem } from '../../components/layout/taskListTypes';
 import {
   fetchEmployeeBenefitWorkloadForMonth,
@@ -185,7 +185,12 @@ export const EmployeeStatisticsPage = () => {
           fetchEmployeeWeekBalance(row.id, d),
         ]);
         if (cancelled) return;
-        setTasks(tasksRaw.map(apiTaskToListItem));
+        // Завершённые (100%) задачи относятся к архиву и не показываются в активном списке (правило системы).
+        setTasks(
+          tasksRaw
+            .filter((t) => normalizeTaskProgress(t.currentProgress) < 100)
+            .map(apiTaskToListItem),
+        );
         setStatsCount(n);
         setChartData(bw);
         setTimelineSegments(tl);

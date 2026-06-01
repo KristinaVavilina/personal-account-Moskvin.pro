@@ -12,6 +12,7 @@ export interface TaskPanelTasksState {
 
 export type TaskPanelTasksAction =
   | { type: 'SYNC_TASKS'; tasks: TaskListItem[] }
+  | { type: 'SYNC_ARCHIVED'; tasks: TaskListItem[] }
   | { type: 'DELETE_TO_ARCHIVE'; id: string }
   | { type: 'RESTORE_FROM_ARCHIVE'; id: string }
   | { type: 'ADD_TASK'; task: TaskListItem }
@@ -26,16 +27,26 @@ export function normalizeTaskListItem(t: TaskListItem): TaskListItem {
   };
 }
 
+function archivedRecordsFromTasks(tasks: TaskListItem[]): ArchivedTaskRecord[] {
+  return tasks.map((t, i) => ({
+    task: normalizeTaskListItem(t),
+    originalIndex: i,
+    daysLeft: ARCHIVE_RETENTION_DAYS,
+  }));
+}
+
 export function createInitialTaskPanelState(
   tasks: TaskListItem[],
-  options?: { emptyArchive?: boolean },
+  options?: { emptyArchive?: boolean; archivedTasks?: TaskListItem[] },
 ): TaskPanelTasksState {
   const taskList = tasks.map(normalizeTaskListItem);
   return {
     taskList,
-    archivedList: options?.emptyArchive
-      ? []
-      : initialArchivedTaskRecords(taskList.length),
+    archivedList: options?.archivedTasks
+      ? archivedRecordsFromTasks(options.archivedTasks)
+      : options?.emptyArchive
+        ? []
+        : initialArchivedTaskRecords(taskList.length),
   };
 }
 
@@ -68,6 +79,20 @@ export function taskPanelTasksReducer(
       return {
         ...state,
         taskList,
+      };
+    }
+
+    case 'SYNC_ARCHIVED': {
+      // Серверный архив (завершённые/архивные задачи) + локально заархивированные за сессию,
+      // которых ещё нет в ответе сервера. Дублей по id не создаём.
+      const incoming = archivedRecordsFromTasks(action.tasks);
+      const incomingIds = new Set(incoming.map((a) => a.task.id));
+      const keptLocal = state.archivedList.filter((a) => !incomingIds.has(a.task.id));
+      const archivedList = [...incoming, ...keptLocal];
+      const archivedIds = new Set(archivedList.map((a) => a.task.id));
+      return {
+        taskList: state.taskList.filter((t) => !archivedIds.has(t.id)),
+        archivedList,
       };
     }
 

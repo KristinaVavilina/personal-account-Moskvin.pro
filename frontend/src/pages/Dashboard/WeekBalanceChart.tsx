@@ -7,7 +7,9 @@ import {
 } from '../../constants';
 import type { WeekBalanceEntry } from '../../mocks/weekBalanceMock';
 import { pluralRuTasks, RECHARTS_NUNITO_TOOLTIP_STYLE } from '../../utils';
-import { formatTimeLoggedHoursForDisplay } from '../../utils/progressDashboardTransform';
+
+/** Часы баланса недели отображаются округлёнными до целого. */
+const roundHours = (n: number): number => (Number.isFinite(n) ? Math.round(n) : 0);
 
 type PieRow = {
   category: ChartWorkloadCategory;
@@ -54,14 +56,14 @@ export const WeekBalanceChart = ({ data }: WeekBalanceChartProps) => {
     total > 0
       ? valueUnit === 'tasks'
         ? `Распределение ${total} ${pluralRuTasks(total)} по категориям за неделю`
-        : `Распределение ${formatTimeLoggedHoursForDisplay(total)} ч по категориям за неделю`
+        : `Проработано ${roundHours(total)} ч за неделю (распределение по категориям)`
       : 'Нет данных по балансу недели';
 
   const centerTotal =
     total > 0
       ? valueUnit === 'tasks'
         ? String(total)
-        : formatTimeLoggedHoursForDisplay(total)
+        : String(roundHours(total))
       : '—';
 
   return (
@@ -110,7 +112,7 @@ export const WeekBalanceChart = ({ data }: WeekBalanceChartProps) => {
                   formatter={(value, name) => {
                     const v = Number(value);
                     const line =
-                      valueUnit === 'tasks' ? `${v} ${pluralRuTasks(v)}` : `${formatTimeLoggedHoursForDisplay(v)} ч`;
+                      valueUnit === 'tasks' ? `${v} ${pluralRuTasks(v)}` : `${roundHours(v)} ч`;
                     return [line, String(name)];
                   }}
                   contentStyle={{ ...RECHARTS_NUNITO_TOOLTIP_STYLE }}

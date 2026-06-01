@@ -8,7 +8,9 @@ import { KnowledgeBasePage } from './pages/KnowledgeBase/KnowledgeBasePage';
 import { EmployeesListPage } from './pages/Employees/EmployeesListPage';
 import { EmployeeStatisticsPage } from './pages/Employees/EmployeeStatisticsPage';
 import { RenderFarmPage } from './pages/RenderFarm/RenderFarmPage';
+import type { ReactNode } from 'react';
 import { ROUTE } from './constants';
+import { canManage } from './constants/userRoles';
 import { useUserStore } from './store/useUserStore';
 
 /** Редирект неаутентифицированных пользователей на страницу входа */
@@ -16,6 +18,15 @@ const ProtectedRoute = () => {
   const isAuthenticated = useUserStore((s) => s.isAuthenticated);
   if (!isAuthenticated) return <Navigate to={ROUTE.LOGIN} replace />;
   return <Dashboard />;
+};
+
+/** Доступ только для руководителя/администратора. Сотрудника редиректим на «Прогресс». */
+const ManagerRoute = ({ children }: { children: ReactNode }) => {
+  const roleLoaded = useUserStore((s) => s.roleLoaded);
+  const apiRole = useUserStore((s) => s.apiRole);
+  if (!roleLoaded) return null;
+  if (!canManage(apiRole)) return <Navigate to={ROUTE.PROGRESS} replace />;
+  return <>{children}</>;
 };
 
 function App() {
@@ -35,8 +46,22 @@ function App() {
           <Route path={ROUTE.REPORTING.slice(1)} element={<DashboardTabsPage />} />
           <Route path={ROUTE.CALENDAR.slice(1)} element={<DashboardTabsPage />} />
           <Route path={ROUTE.KNOWLEDGE_BASE.slice(1)} element={<KnowledgeBasePage />} />
-          <Route path={`${ROUTE.EMPLOYEES.slice(1)}/:userId`} element={<EmployeeStatisticsPage />} />
-          <Route path={ROUTE.EMPLOYEES.slice(1)} element={<EmployeesListPage />} />
+          <Route
+            path={`${ROUTE.EMPLOYEES.slice(1)}/:userId`}
+            element={
+              <ManagerRoute>
+                <EmployeeStatisticsPage />
+              </ManagerRoute>
+            }
+          />
+          <Route
+            path={ROUTE.EMPLOYEES.slice(1)}
+            element={
+              <ManagerRoute>
+                <EmployeesListPage />
+              </ManagerRoute>
+            }
+          />
           <Route path={ROUTE.RENDER_FARM.slice(1)} element={<RenderFarmPage />} />
           <Route path={ROUTE.PROFILE.slice(1)} element={<ProfilePage />} />
         </Route>

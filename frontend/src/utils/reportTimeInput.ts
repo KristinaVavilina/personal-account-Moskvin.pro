@@ -2,7 +2,7 @@
 export function normalizeReportTimeForApi(raw: string): string | null {
   const s = raw.trim();
   if (!s) return null;
-  const m = /^(\d{1,2}):(\d{2})$/u.exec(s);
+  const m = /^(\d{1,2}):(\d{2})(?::\d{2})?$/u.exec(s);
   if (!m) return null;
   const h = Number(m[1]);
   const min = Number(m[2]);

@@ -1,4 +1,4 @@
-import { PROGRESS_MOCK_DEFAULT_USER_ID, USE_PROFILE_MOCK } from '../config';
+import { getDevUserIdOverride, PROGRESS_MOCK_DEFAULT_USER_ID, USE_PROFILE_MOCK } from '../config';
 import type { ApiUserResponse } from '../types/userApi';
 import { getMockUserProfileById } from '../mocks/profileMock';
 import { resolveDevUserId } from './devUser';
@@ -7,7 +7,7 @@ import { normalizeDirectoryUser } from './users';
 
 async function resolveProfileUserId(): Promise<string | null> {
   if (USE_PROFILE_MOCK) {
-    const fromEnv = import.meta.env.VITE_DEV_USER_ID?.trim();
+    const fromEnv = getDevUserIdOverride();
     return fromEnv || PROGRESS_MOCK_DEFAULT_USER_ID;
   }
   return resolveDevUserId();

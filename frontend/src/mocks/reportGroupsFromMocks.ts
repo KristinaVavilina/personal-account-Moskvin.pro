@@ -39,7 +39,23 @@ function formatTimeRange(start: string, end: string): string {
   return `${formatTimePart(start)} - ${formatTimePart(end)}`;
 }
 
-/** Объединение ответа API и локально сохранённых таймлогов за интервал [monthStart, monthEnd]. Локальные id перекрывают совпадения. */
+/** Ключ совпадения таймлога/отчёта: задача + дата + начало/конец (минуты). */
+function timeLogMatchKey(log: ApiTimeLogRow | StoredReportEntry): string {
+  return [
+    log.taskId,
+    log.date.slice(0, 10),
+    formatTimePart(log.startTime),
+    formatTimePart(log.endTime),
+  ].join('|');
+}
+
+/**
+ * Объединение ответа API и локально сохранённых отчётов за интервал [monthStart, monthEnd].
+ *
+ * Один и тот же отчёт после сохранения существует и в локальном сторе (editable, со своим
+ * client-id), и в ответе API (server-id). Чтобы он не задваивался, локальная запись
+ * перекрывает совпадающий по содержанию (задача+дата+время) API-таймлог.
+ */
 export function mergeMonthApiTimeLogsWithLocal(
   apiLogs: ApiTimeLogRow[],
   localEntries: StoredReportEntry[],
@@ -54,10 +70,16 @@ export function mergeMonthApiTimeLogsWithLocal(
   };
   const localInMonth = localEntries.filter((e) => inMonth(e.date));
   const byId = new Map<string, ApiTimeLogRow | StoredReportEntry>();
+  const apiIdByMatch = new Map<string, string>();
   for (const l of apiLogs) {
-    if (inMonth(l.date)) byId.set(l.id, l);
+    if (!inMonth(l.date)) continue;
+    byId.set(l.id, l);
+    apiIdByMatch.set(timeLogMatchKey(l), l.id);
   }
   for (const l of localInMonth) {
+    // удаляем дубль из API (тот же отчёт, но с server-id), оставляя редактируемую локальную запись
+    const apiDupId = apiIdByMatch.get(timeLogMatchKey(l));
+    if (apiDupId) byId.delete(apiDupId);
     byId.set(l.id, l);
   }
   return [...byId.values()];

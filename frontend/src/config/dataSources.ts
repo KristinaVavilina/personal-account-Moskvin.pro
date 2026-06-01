@@ -8,7 +8,7 @@
  * - Просмотр коллеги в разделе «Сотрудники» зависит от `USE_PROGRESS_MOCK`
  *   и отдельных GET по `userId`, а не от `USE_EMPLOYEES_MOCK`.
  * - В режиме `USE_PROGRESS_MOCK`/`USE_PROFILE_MOCK` идентификатор пользователя берётся
- *   из `VITE_DEV_USER_ID` либо из `PROGRESS_MOCK_DEFAULT_USER_ID` без вызова GET /api/User.
+ *   из `getDevUserIdOverride()` либо из `PROGRESS_MOCK_DEFAULT_USER_ID` без вызова GET /api/User.
  */
 
 /** Дашборд: рефлексии, таймлоги, задачи. */
