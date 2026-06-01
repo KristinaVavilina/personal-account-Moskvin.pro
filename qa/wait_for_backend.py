@@ -20,10 +20,11 @@ def main() -> None:
         attempt += 1
         try:
             res = requests.get(url("/api/User"), timeout=10)
-            if res.status_code < 500:
-                log(f"Backend доступен ({res.status_code}) после {attempt} попыток.")
+            if res.status_code == 200:
+                log(f"Backend отвечает 200 на GET /api/User после {attempt} попыток.")
                 return
-            log(f"  … попытка {attempt}: HTTP {res.status_code}")
+            detail = res.text[:200].replace("\n", " ")
+            log(f"  … попытка {attempt}: HTTP {res.status_code} — {detail}")
         except requests.RequestException as exc:
             log(f"  … попытка {attempt}: {exc}")
         time.sleep(POLL_INTERVAL)
